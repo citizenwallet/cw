@@ -1,5 +1,5 @@
 package server
 
 type Server interface {
-	Start() error
+	Start(port int) error
 }
