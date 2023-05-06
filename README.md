@@ -37,7 +37,7 @@ Each individual program should be stateless and be able to be scaled up/down to 
 - Re-sign user transactions and take fees from master wallet
 - Call the contract mint function (address, amount) [**onlyOwner**]
 - Call the contract burn function (address, amount) [**onlyOwner**]
-- Associate/Disassociate an address with a push notification token [**only if address and sender match**]
+- Associate/Dissociate an address with a push notification token [**only if address and sender match**]
 - Incoming webhook to mint/burn [**onlyOwner**]
 
 ⚪️ Event Listener v1
