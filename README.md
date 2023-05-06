@@ -58,7 +58,7 @@ Replace values in `.env` for your setup
 
 ## Run Gas Station
 
-`go run cmd/cw/main.go -url endpoint`
+`go run cmd/station/main.go -url endpoint`
 
 ## Run Blockchain Event Handler
 
