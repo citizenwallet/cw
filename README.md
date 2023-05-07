@@ -21,7 +21,7 @@ Each individual program should be stateless and be able to be scaled up/down to 
 
 ⚪️ pending ⏳ in progress ✅ done
 
-⏳ Setup
+✅ Setup
 
 - project structure
 - main functions for programs
@@ -32,7 +32,7 @@ Each individual program should be stateless and be able to be scaled up/down to 
 - modules
 - env
 
-⚪️ Gas Station v1
+⏳ Gas Station v1
 
 - Re-sign user transactions and take fees from master wallet
 - Call the contract mint function (address, amount) [**onlyOwner**]
