@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/daobrussels/cw/pkg/config"
+	"github.com/daobrussels/cw/pkg/hello"
 	"github.com/daobrussels/cw/pkg/push"
 	"github.com/daobrussels/cw/pkg/server"
 	"github.com/daobrussels/cw/pkg/token"
@@ -30,16 +31,20 @@ func (r *Router) Start(port int) error {
 	cr := chi.NewRouter()
 
 	// configure middleware
-	cr.Use(middleware.Compress(5))
+	cr.Use(OptionsMiddleware)
 	cr.Use(HealthMiddleware)
+	cr.Use(middleware.Compress(9))
 	cr.Use(SignatureMiddleware)
 
 	// instantiate handlers
+	hello := hello.NewHandlers()
 	transaction := transaction.NewHandlers()
 	token := token.NewHandlers()
 	push := push.NewHandlers()
 
 	// configure routes
+	cr.Get("/hello", hello.Hello)
+
 	cr.Post("/transaction", transaction.Send)
 
 	cr.Route("/token", func(cr chi.Router) {

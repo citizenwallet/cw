@@ -1,6 +1,38 @@
 package router
 
-import "net/http"
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"strings"
+	"sync"
+
+	"github.com/daobrussels/cw/pkg/common/request"
+	"github.com/daobrussels/cw/pkg/cw"
+	"github.com/go-chi/chi/v5"
+)
+
+var (
+	options sync.Map
+
+	allMethods = []string{
+		http.MethodGet,
+		http.MethodPost,
+		http.MethodPatch,
+		http.MethodPut,
+		http.MethodDelete,
+	}
+
+	acceptedHeaders = []string{
+		"Origin",
+		"Content-Type",
+		"Content-Length",
+		"X-Requested-With",
+		"Accept-Encoding",
+		cw.SignatureHeader,
+		cw.PubKeyHeader,
+	}
+)
 
 // HealthMiddleware is a middleware that responds to health checks
 func HealthMiddleware(next http.Handler) http.Handler {
@@ -23,8 +55,89 @@ func SignatureMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// TODO implement signature check
+		// check request signature
+		var req request.Request
 
-		next.ServeHTTP(w, r)
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		signature := r.Header.Get(cw.SignatureHeader)
+		if signature == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		if !req.VerifySignature(signature) {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		pubkey := r.Header.Get(cw.PubKeyHeader)
+		if pubkey == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), cw.ContextKeyPubKey, pubkey)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// OptionsMiddleware ensures that we return the correct headers for CORS requests
+func OptionsMiddleware(h http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		ctx, _ := r.Context().Value(chi.RouteCtxKey).(*chi.Context)
+
+		var path string
+		if r.URL.RawPath != "" {
+			path = r.URL.RawPath
+		} else {
+			path = r.URL.Path
+		}
+
+		var methodsStr string
+		cached, ok := options.Load(path)
+		if ok {
+			methodsStr = cached.(string)
+		} else {
+			var methods []string
+			for _, method := range allMethods {
+				nctx := chi.NewRouteContext()
+				if ctx.Routes.Match(nctx, method, path) {
+					methods = append(methods, method)
+				}
+			}
+
+			methods = append(methods, http.MethodOptions)
+			methodsStr = strings.Join(methods, ", ")
+			options.Store(path, methodsStr)
+		}
+
+		// allowed methods
+		w.Header().Set("Allow", methodsStr)
+
+		// allowed methods for CORS
+		w.Header().Set("Access-Control-Allow-Methods", methodsStr)
+
+		// allowed origins
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
+		// allowed headers
+		w.Header().Set("Access-Control-Allow-Headers", strings.Join(acceptedHeaders, ", "))
+
+		// actually handle the request
+		if r.Method != http.MethodOptions {
+			h.ServeHTTP(w, r)
+			return
+		}
+
+		// handle OPTIONS requests
+		w.WriteHeader(http.StatusOK)
+	}
+
+	return http.HandlerFunc(fn)
 }

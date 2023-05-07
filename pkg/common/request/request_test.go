@@ -23,7 +23,7 @@ func TestRequest(t *testing.T) {
 		}
 
 		// test request signature
-		req := New([]byte(address), b)
+		req := New(address, b)
 
 		// encrypt the request data
 		encrypted, err := req.Encrypt(pubhexkey)
@@ -49,7 +49,7 @@ func TestRequest(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		req := New([]byte(address), b)
+		req := New(address, b)
 
 		// generate signature
 		sig, err := req.GenerateSignature(privhexkey)
