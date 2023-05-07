@@ -7,13 +7,20 @@ import (
 )
 
 type Handlers struct {
+	responder *response.Responder
 }
 
-func NewHandlers() *Handlers {
-	return &Handlers{}
+func NewHandlers(r *response.Responder) *Handlers {
+	return &Handlers{
+		responder: r,
+	}
 }
 
 // Hello returns the supply wallet public key and address
 func (h *Handlers) Hello(w http.ResponseWriter, r *http.Request) {
-	response.EncryptedBody(w, r.Context(), []byte("{}"))
+	err := h.responder.EncryptedBody(w, r.Context(), []byte("{}"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }

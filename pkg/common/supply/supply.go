@@ -1,36 +1,39 @@
 package supply
 
 import (
-	"log"
-	"os"
+	"crypto/ecdsa"
+	"errors"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type Supply struct {
+	PrivateKey    *ecdsa.PrivateKey
 	PrivateHexKey string
+	PubHexKey     string
+	Address       string
 }
 
-var PrivateHexKey string
-var PublicHexKey string
-
-func init() {
-	hexkey := os.Getenv("SUPPLY_WALLET_KEY")
+func New(hexkey string) (*Supply, error) {
 	if hexkey == "" {
-		log.Fatal("missing supply key")
+		return nil, errors.New("SUPPLY_WALLET_KEY is not set")
 	}
-
-	PrivateHexKey = hexkey
 
 	privateKey, err := crypto.HexToECDSA(hexkey)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	compressed := crypto.CompressPubkey(&privateKey.PublicKey)
 	if compressed == nil {
-		log.Fatal("invalid public key")
+		return nil, errors.New("unable to compress public key")
 	}
 
-	PublicHexKey = string(compressed)
+	return &Supply{
+		PrivateKey:    privateKey,
+		PrivateHexKey: hexkey,
+		PubHexKey:     common.Bytes2Hex(compressed),
+		Address:       crypto.PubkeyToAddress(privateKey.PublicKey).Hex(),
+	}, nil
 }

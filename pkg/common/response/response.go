@@ -27,7 +27,17 @@ type Response struct {
 	Objects      any          `json:"objects,omitempty"`
 }
 
-func Body(w http.ResponseWriter, body any) error {
+type Responder struct {
+	supply *supply.Supply
+}
+
+func NewResponder(supply *supply.Supply) *Responder {
+	return &Responder{
+		supply: supply,
+	}
+}
+
+func (r *Responder) Body(w http.ResponseWriter, body any) error {
 
 	w.Header().Add("Content-Type", "application/json")
 
@@ -44,7 +54,7 @@ func Body(w http.ResponseWriter, body any) error {
 	return nil
 }
 
-func EncryptedBody(w http.ResponseWriter, ctx context.Context, body any) error {
+func (r *Responder) EncryptedBody(w http.ResponseWriter, ctx context.Context, body any) error {
 
 	pubhexkey, ok := cw.GetPubKeyFromContext(ctx)
 	if !ok {
@@ -65,7 +75,7 @@ func EncryptedBody(w http.ResponseWriter, ctx context.Context, body any) error {
 
 	req := request.New(address.Hex(), b)
 
-	sig, err := req.GenerateSignature(supply.PrivateHexKey)
+	sig, err := req.GenerateSignature(r.supply.PrivateHexKey)
 	if err != nil {
 		return err
 	}
@@ -85,7 +95,7 @@ func EncryptedBody(w http.ResponseWriter, ctx context.Context, body any) error {
 
 	w.Header().Add("Content-Type", "application/json")
 	w.Header().Add(cw.SignatureHeader, sig)
-	w.Header().Add(cw.PubKeyHeader, supply.PublicHexKey)
+	w.Header().Add(cw.PubKeyHeader, r.supply.PubHexKey)
 	w.Write(bresp)
 
 	return nil

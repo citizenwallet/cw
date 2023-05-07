@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/daobrussels/cw/pkg/common/response"
+	"github.com/daobrussels/cw/pkg/common/supply"
 	"github.com/daobrussels/cw/pkg/config"
 	"github.com/daobrussels/cw/pkg/hello"
 	"github.com/daobrussels/cw/pkg/push"
@@ -28,6 +30,13 @@ func NewServer(conf *config.Config) server.Server {
 // implement the Server interface
 func (r *Router) Start(port int) error {
 
+	s, err := supply.New(r.conf.SupplyWalletKey)
+	if err != nil {
+		return err
+	}
+
+	responder := response.NewResponder(s)
+
 	cr := chi.NewRouter()
 
 	// configure middleware
@@ -37,7 +46,7 @@ func (r *Router) Start(port int) error {
 	cr.Use(SignatureMiddleware)
 
 	// instantiate handlers
-	hello := hello.NewHandlers()
+	hello := hello.NewHandlers(responder)
 	transaction := transaction.NewHandlers()
 	token := token.NewHandlers()
 	push := push.NewHandlers()
