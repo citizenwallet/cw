@@ -46,7 +46,7 @@ func (r *Router) Start(port int) error {
 	cr.Use(SignatureMiddleware)
 
 	// instantiate handlers
-	hello := hello.NewHandlers(responder)
+	hello := hello.NewHandlers(r.conf.Chain, responder)
 	transaction := transaction.NewHandlers()
 	token := token.NewHandlers()
 	push := push.NewHandlers()

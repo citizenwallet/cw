@@ -1,14 +1,16 @@
-package request
+package tests
 
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/daobrussels/cw/pkg/common/request"
 )
 
 const (
-	privhexkey = "b123284ed609ca4c19a78124567d606f1202630e72784602475f1eb0b3f0a0a2"
-	pubhexkey  = "0288cd52ce87d3e674a2383f009e2c956402b99675bc1dc0414a4b78d98dde634b"
-	address    = "0x39bC81005a2BEa2122A2F2fd963Db3ac8aDbC518"
+	reqprivhexkey = "b123284ed609ca4c19a78124567d606f1202630e72784602475f1eb0b3f0a0a2"
+	reqpubhexkey  = "0288cd52ce87d3e674a2383f009e2c956402b99675bc1dc0414a4b78d98dde634b"
+	reqaddress    = "0x39bC81005a2BEa2122A2F2fd963Db3ac8aDbC518"
 )
 
 type TestData struct {
@@ -23,16 +25,16 @@ func TestRequest(t *testing.T) {
 		}
 
 		// test request signature
-		req := New(address, b)
+		req := request.New(reqaddress, b)
 
 		// encrypt the request data
-		encrypted, err := req.Encrypt(pubhexkey)
+		encrypted, err := req.Encrypt(reqpubhexkey)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// decrypt the request data
-		decrypted, err := Decrypt(privhexkey, encrypted)
+		decrypted, err := request.Decrypt(reqprivhexkey, encrypted)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -49,10 +51,10 @@ func TestRequest(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		req := New(address, b)
+		req := request.New(reqaddress, b)
 
 		// generate signature
-		sig, err := req.GenerateSignature(privhexkey)
+		sig, err := req.GenerateSignature(reqprivhexkey)
 		if err != nil {
 			t.Fatal(err)
 		}

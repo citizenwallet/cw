@@ -44,9 +44,9 @@ type ChainConfig struct {
 }
 
 // GetChain returns the chain config for the local chain.json file
-func GetChain() (*ChainConfig, error) {
+func GetChain(path string) (*ChainConfig, error) {
 	// read the chain.json file
-	f, err := os.Open("chain.json")
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}

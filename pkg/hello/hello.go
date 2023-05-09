@@ -12,11 +12,13 @@ type HelloResponse struct {
 }
 
 type Handlers struct {
+	chain     cw.ChainConfig
 	responder *response.Responder
 }
 
-func NewHandlers(r *response.Responder) *Handlers {
+func NewHandlers(chain cw.ChainConfig, r *response.Responder) *Handlers {
 	return &Handlers{
+		chain:     chain,
 		responder: r,
 	}
 }
@@ -24,13 +26,7 @@ func NewHandlers(r *response.Responder) *Handlers {
 // Hello returns returns the local chain configuration and signs the response.
 // Allows for clients to verify the response and respond using the public key of the sender
 func (h *Handlers) Hello(w http.ResponseWriter, r *http.Request) {
-	chain, err := cw.GetChain()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err = h.responder.EncryptedBody(w, r.Context(), chain)
+	err := h.responder.EncryptedBody(w, r.Context(), h.chain)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
