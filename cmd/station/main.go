@@ -20,7 +20,8 @@ func main() {
 		"specify whether to use a dot env file or not",
 	)
 	port := flag.Int("port", 3000, "specify the port to use")
-	_ = flag.String("url", "http://localhost:8545", "specify the url to use")
+	_ = flag.String("chainUrl", "http://localhost:8545", "specify the url to use")
+	_ = flag.Int("chainId", 80001, "specify the chain id to use")
 	flag.Parse()
 
 	conf, err := config.NewConfig(ctx, *env)

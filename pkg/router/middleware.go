@@ -49,9 +49,17 @@ func HealthMiddleware(next http.Handler) http.Handler {
 // SignatureMiddleware is a middleware that checks the signature of the request against the request body
 func SignatureMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pubkey := r.Header.Get(cw.PubKeyHeader)
+		if pubkey == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), cw.ContextKeyPubKey, pubkey)
+
 		if r.Method == http.MethodGet {
 			// GET requests are not signed
-			next.ServeHTTP(w, r)
+			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 
@@ -74,14 +82,6 @@ func SignatureMiddleware(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-
-		pubkey := r.Header.Get(cw.PubKeyHeader)
-		if pubkey == "" {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), cw.ContextKeyPubKey, pubkey)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

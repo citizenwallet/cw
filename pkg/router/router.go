@@ -57,7 +57,7 @@ func (r *Router) Start(port int) error {
 	cr.Post("/transaction", transaction.Send)
 
 	cr.Route("/token", func(cr chi.Router) {
-		cr.Post("mint", token.Mint)
+		cr.Post("/mint", token.Mint)
 		cr.Post("/burn", token.Burn)
 	})
 

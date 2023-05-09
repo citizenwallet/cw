@@ -9,20 +9,19 @@ import (
 
 type Config struct {
 	// ...
-	Port               string `env:"PORT,default=3000"`
 	PaymentProviderKey string `env:"PAYMENT_PROVIDER_KEY,required"`
-	SupplyWalletKey    string `env:"SUPPLY_WALLßET_KEY,required"`
+	SupplyWalletKey    string `env:"SUPPLY_WALLET_KEY,required"`
 }
 
 func NewConfig(ctx context.Context, fromFile bool) (*Config, error) {
 	if fromFile {
-		err := godotenv.Load()
+		err := godotenv.Load(".env")
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	var conf *Config
+	conf := &Config{}
 
 	err := envconfig.Process(ctx, conf)
 	if err != nil {
