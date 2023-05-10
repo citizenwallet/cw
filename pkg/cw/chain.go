@@ -36,8 +36,8 @@ type ChainConfig struct {
 	NativeCurrency ChainNativeCurrency `json:"nativeCurrency"`
 	InfoURL        string              `json:"infoURL"`
 	ShortName      string              `json:"shortName"`
-	ChainID        int                 `json:"chainID"`
-	NetworkID      int                 `json:"networkID"`
+	ChainID        int                 `json:"chainId"`
+	NetworkID      int                 `json:"networkId"`
 	Slip44         int                 `json:"slip44"`
 	ENS            ChainENS            `json:"ens"`
 	Explorers      []ChainExplorer     `json:"explorers"`

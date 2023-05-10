@@ -18,6 +18,7 @@ type ResponseType string
 const (
 	ResponseTypeObject ResponseType = "object"
 	ResponseTypeArray  ResponseType = "array"
+	ResponseTypeSecure ResponseType = "secure"
 )
 
 type Response struct {
@@ -86,7 +87,7 @@ func (r *Responder) EncryptedBody(w http.ResponseWriter, ctx context.Context, bo
 	}
 
 	bresp, err := json.Marshal(&Response{
-		ResponseType: ResponseTypeObject,
+		ResponseType: ResponseTypeSecure,
 		Secure:       secure,
 	})
 	if err != nil {

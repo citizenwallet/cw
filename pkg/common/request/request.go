@@ -1,14 +1,14 @@
 package request
 
 import (
-	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"time"
 
+	"github.com/decred/dcrd/dcrec/secp256k1/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/ecies"
+	bitcoin_ecies "github.com/gitzhou/bitcoin-ecies"
 )
 
 const (
@@ -33,49 +33,36 @@ func New(address string, data []byte) *Request {
 
 // Encrypt encrypts the request data using the public key, result is base64 encoded
 func (r *Request) Encrypt(pubhexkey string) (string, error) {
-	publicKey, err := crypto.DecompressPubkey(common.Hex2Bytes(pubhexkey))
+	publicKey, err := secp256k1.ParsePubKey(common.Hex2Bytes(pubhexkey))
 	if err != nil {
 		return "", err
 	}
 
 	// marshal the request to bytes
-	b, err := json.Marshal(r)
+	msg, err := json.Marshal(r)
 	if err != nil {
 		return "", err
 	}
 
-	// encrypt the request data
-	encrypted, err := ecies.Encrypt(rand.Reader, ecies.ImportECDSAPublic(publicKey), b, nil, nil)
+	encrypted, err := bitcoin_ecies.EncryptMessage(string(msg), publicKey.Serialize())
 	if err != nil {
 		return "", err
 	}
 
-	// base64 encode the encrypted data
-	return base64.StdEncoding.EncodeToString(encrypted), nil
+	return encrypted, nil
 }
 
 // Decrypt decrypts the base64 encoded request data using a private key
 func Decrypt(hexkey string, req string) (*Request, error) {
-	b, err := base64.StdEncoding.DecodeString(req)
-	if err != nil {
-		return nil, err
-	}
-
-	// decode the private key
-	privateKey, err := crypto.HexToECDSA(hexkey)
-	if err != nil {
-		return nil, err
-	}
-
 	// decrypt the request data
-	decrypted, err := ecies.ImportECDSA(privateKey).Decrypt(b, nil, nil)
+	decrypted, err := bitcoin_ecies.DecryptMessage(req, common.Hex2Bytes(hexkey))
 	if err != nil {
 		return nil, err
 	}
 
 	// unmarshal the request
 	r := &Request{}
-	err = json.Unmarshal(decrypted, r)
+	err = json.Unmarshal([]byte(decrypted), r)
 	if err != nil {
 		return nil, err
 	}

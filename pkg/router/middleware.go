@@ -3,6 +3,7 @@ package router
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -82,6 +83,9 @@ func SignatureMiddleware(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+
+		r.Body = io.NopCloser(strings.NewReader(string(req.Data)))
+		r.ContentLength = int64(len(req.Data))
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

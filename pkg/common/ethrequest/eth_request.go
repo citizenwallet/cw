@@ -1,8 +1,6 @@
 package ethrequest
 
 import (
-	"encoding/json"
-
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -35,17 +33,9 @@ func (e *EthService) EstimateGas(txobj any) (string, error) {
 
 	gas := "0x0"
 
-	result, err := e.rClient.Post(ETHEstimateGas, []any{txobj, "latest"})
-	if err != nil {
-		return gas, err
-	}
+	err := e.client.Call(&gas, ETHEstimateGas, txobj, "latest")
 
-	err = json.Unmarshal(result, &gas)
-	if err != nil {
-		return gas, err
-	}
-
-	return gas, nil
+	return gas, err
 }
 
 func (e *EthService) SendRawTransaction(tx string) ([]byte, error) {
