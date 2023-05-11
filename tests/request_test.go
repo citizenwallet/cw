@@ -10,7 +10,7 @@ import (
 const (
 	reqprivhexkey = "b123284ed609ca4c19a78124567d606f1202630e72784602475f1eb0b3f0a0a2"
 	reqpubhexkey  = "0288cd52ce87d3e674a2383f009e2c956402b99675bc1dc0414a4b78d98dde634b"
-	reqaddress    = "0x39bC81005a2BEa2122A2F2fd963Db3ac8aDbC518"
+	reqaddress    = "0x35fF694e4161B914ea8344fE3865f19fa31D59C4"
 )
 
 type TestData struct {

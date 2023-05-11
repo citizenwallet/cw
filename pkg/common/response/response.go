@@ -9,8 +9,6 @@ import (
 	"github.com/daobrussels/cw/pkg/common/request"
 	"github.com/daobrussels/cw/pkg/common/supply"
 	"github.com/daobrussels/cw/pkg/cw"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type ResponseType string
@@ -62,19 +60,12 @@ func (r *Responder) EncryptedBody(w http.ResponseWriter, ctx context.Context, bo
 		return errors.New("unable to parse public key from context")
 	}
 
-	pubkey, err := crypto.DecompressPubkey(common.Hex2Bytes(pubhexkey))
-	if err != nil {
-		return err
-	}
-
-	address := crypto.PubkeyToAddress(*pubkey)
-
 	b, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
 
-	req := request.New(address.Hex(), b)
+	req := request.New(r.supply.Address, b)
 
 	sig, err := req.GenerateSignature(r.supply.PrivateHexKey)
 	if err != nil {
