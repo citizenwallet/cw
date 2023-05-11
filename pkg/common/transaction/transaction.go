@@ -75,3 +75,17 @@ func (s *Service) Send(to string, amount int64) error {
 
 	return err
 }
+
+func (s *Service) Forward(tx string) error {
+	ethservice, err := ethrequest.NewEthService(s.chain.RPC[0])
+	if err != nil {
+		return err
+	}
+	defer ethservice.Close()
+
+	paddedTx := fmt.Sprintf("0x%s", tx)
+
+	_, err = ethservice.SendRawTransaction(paddedTx)
+
+	return err
+}

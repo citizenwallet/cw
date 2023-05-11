@@ -43,11 +43,11 @@ func (r *Router) Start(port int) error {
 	cr.Use(OptionsMiddleware)
 	cr.Use(HealthMiddleware)
 	cr.Use(middleware.Compress(9))
-	cr.Use(SignatureMiddleware)
+	cr.Use(createSignatureMiddleware(r.conf.SupplyWalletKey))
 
 	// instantiate handlers
 	hello := hello.NewHandlers(r.conf.Chain, responder)
-	transaction := transaction.NewHandlers()
+	transaction := transaction.NewHandlers(&r.conf.Chain, s)
 	token := token.NewHandlers()
 	push := push.NewHandlers()
 
