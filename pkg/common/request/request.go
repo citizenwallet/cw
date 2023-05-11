@@ -2,6 +2,7 @@ package request
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
@@ -100,10 +101,12 @@ func (r *Request) VerifySignature(signature string) bool {
 	}
 
 	// derive the address from the public key
-	address := common.BytesToAddress(pubkey.SerializeUncompressed())
+	address := crypto.PubkeyToAddress(*pubkey.ToECDSA())
+
+	recoveredaddr := address.Hex()
 
 	// the address in the request must match the address derived from the signature
-	if address.Hex() != string(r.Address) {
+	if strings.ToLower(recoveredaddr) != strings.ToLower(r.Address) {
 		return false
 	}
 
