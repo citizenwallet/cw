@@ -93,11 +93,13 @@ func (r *Request) VerifySignature(signature string) bool {
 		return false
 	}
 
+	// recover the public key from the signature
 	pubkey, _, err := ecdsa.RecoverCompact(sig, h.Bytes())
 	if err != nil {
 		return false
 	}
 
+	// derive the address from the public key
 	address := common.BytesToAddress(pubkey.SerializeUncompressed())
 
 	// the address in the request must match the address derived from the signature
@@ -105,18 +107,20 @@ func (r *Request) VerifySignature(signature string) bool {
 		return false
 	}
 
-	// return true
-	j, k := secp256k1.ModNScalar{}, secp256k1.ModNScalar{}
+	// create ModNScalars from the signature manually
+	sr, ss := secp256k1.ModNScalar{}, secp256k1.ModNScalar{}
 
-	j.SetByteSlice(sig[1:33])
-	k.SetByteSlice(sig[33:65])
+	// set the byteslices manually from the signature
+	sr.SetByteSlice(sig[1:33])
+	ss.SetByteSlice(sig[33:65])
 
-	// // remove the recovery id from the signature
-	ns := ecdsa.NewSignature(&j, &k)
+	// create a new signature from the ModNScalars
+	ns := ecdsa.NewSignature(&sr, &ss)
 	if err != nil {
 		return false
 	}
 
+	// verify the signature
 	return ns.Verify(h.Bytes(), pubkey)
 }
 
