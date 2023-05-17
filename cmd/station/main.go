@@ -14,9 +14,9 @@ func main() {
 
 	log.Default().Println("station starting up...")
 
-	env := flag.Bool(
+	env := flag.String(
 		"env",
-		false,
+		"",
 		"specify whether to use a dot env file or not",
 	)
 	port := flag.Int("port", 3000, "specify the port to use")
@@ -24,7 +24,7 @@ func main() {
 	_ = flag.Int("chainId", 80001, "specify the chain id to use")
 	flag.Parse()
 
-	conf, err := config.NewConfig(ctx, *env)
+	conf, err := config.NewConfig(ctx, "chain.json", *env)
 	if err != nil {
 		log.Fatal(err)
 	}

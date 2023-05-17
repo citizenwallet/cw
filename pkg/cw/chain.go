@@ -51,8 +51,6 @@ func GetChain(path string) (*ChainConfig, error) {
 		return nil, err
 	}
 
-	println(f.Name())
-
 	// decode the chain.json file
 	chain := &ChainConfig{}
 	err = json.NewDecoder(f).Decode(chain)

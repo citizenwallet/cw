@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/daobrussels/cw/pkg/common/ethrequest"
 	"github.com/daobrussels/cw/pkg/common/response"
 	"github.com/daobrussels/cw/pkg/common/supply"
+	"github.com/daobrussels/cw/pkg/community"
 	"github.com/daobrussels/cw/pkg/config"
 	"github.com/daobrussels/cw/pkg/hello"
 	"github.com/daobrussels/cw/pkg/push"
@@ -36,6 +38,11 @@ func (r *Router) Start(port int) error {
 	}
 
 	responder := response.NewResponder(s)
+	ethservice, err := ethrequest.NewEthService(r.conf.Chain.RPC[0])
+	if err != nil {
+		return err
+	}
+	defer ethservice.Close()
 
 	cr := chi.NewRouter()
 
@@ -47,7 +54,8 @@ func (r *Router) Start(port int) error {
 
 	// instantiate handlers
 	hello := hello.NewHandlers(r.conf.Chain, responder)
-	transaction := transaction.NewHandlers(&r.conf.Chain, s)
+	transaction := transaction.NewHandlers(&r.conf.Chain, s, ethservice)
+	community := community.NewHandlers(s, ethservice, responder, &r.conf.Chain)
 	token := token.NewHandlers()
 	push := push.NewHandlers()
 
@@ -55,6 +63,10 @@ func (r *Router) Start(port int) error {
 	cr.Get("/hello", hello.Hello)
 
 	cr.Post("/transaction", transaction.Send)
+
+	cr.Route("/gateway", func(cr chi.Router) {
+		cr.Post("/deploy", community.Deploy)
+	})
 
 	cr.Route("/token", func(cr chi.Router) {
 		cr.Post("/mint", token.Mint)

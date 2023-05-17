@@ -8,43 +8,27 @@ import (
 	"github.com/daobrussels/cw/pkg/common/supply"
 	"github.com/daobrussels/cw/pkg/cw"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
 type Service struct {
-	chain  *cw.ChainConfig
-	supply *supply.Supply
+	chain      *cw.ChainConfig
+	supply     *supply.Supply
+	ethservice *ethrequest.EthService
 }
 
-func New(chain *cw.ChainConfig, s *supply.Supply) *Service {
+func New(chain *cw.ChainConfig, s *supply.Supply, ethservice *ethrequest.EthService) *Service {
 	return &Service{
 		chain,
 		s,
+		ethservice,
 	}
 }
 
 func (s *Service) Send(to string, amount int64) error {
 	address := common.HexToAddress(to)
 
-	req := map[string]string{
-		"from":  s.supply.Address,
-		"to":    to,
-		"value": hexutil.EncodeUint64(uint64(amount)),
-	}
-
-	ethservice, err := ethrequest.NewEthService(s.chain.RPC[0])
-	if err != nil {
-		return err
-	}
-	defer ethservice.Close()
-
-	hexgas, err := ethservice.EstimateGas(req)
-	if err != nil {
-		return err
-	}
-
-	gas, err := hexutil.DecodeUint64(string(hexgas))
+	gas, err := s.ethservice.EstimateGas(s.supply.Address, to, uint64(amount))
 	if err != nil {
 		return err
 	}
@@ -71,7 +55,7 @@ func (s *Service) Send(to string, amount int64) error {
 
 	paddedTx := fmt.Sprintf("0x%s", common.Bytes2Hex(btx))
 
-	_, err = ethservice.SendRawTransaction(paddedTx)
+	_, err = s.ethservice.SendRawTransaction(paddedTx)
 
 	return err
 }

@@ -63,7 +63,7 @@ func createSignatureMiddleware(hexkey string) func(next http.Handler) http.Handl
 
 			ctx := context.WithValue(r.Context(), cw.ContextKeyPubKey, pubkey)
 
-			if r.Method == http.MethodGet {
+			if r.Method == http.MethodGet || strings.Contains(r.URL.Path, "/gateway") {
 				// GET requests are not signed
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return

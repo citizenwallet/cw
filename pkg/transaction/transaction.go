@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/daobrussels/cw/pkg/common/ethrequest"
 	"github.com/daobrussels/cw/pkg/common/supply"
 	"github.com/daobrussels/cw/pkg/common/transaction"
 	"github.com/daobrussels/cw/pkg/cw"
@@ -14,9 +15,9 @@ type Handlers struct {
 }
 
 func NewHandlers(chain *cw.ChainConfig,
-	supply *supply.Supply) *Handlers {
+	supply *supply.Supply, ethservice *ethrequest.EthService) *Handlers {
 	return &Handlers{
-		tr: transaction.New(chain, supply),
+		tr: transaction.New(chain, supply, ethservice),
 	}
 }
 
@@ -27,15 +28,11 @@ type SignedTx struct {
 func (h *Handlers) Send(w http.ResponseWriter, r *http.Request) {
 	var req SignedTx
 
-	println("send")
-
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
-	println("sending...")
 
 	err = h.tr.Forward(req.TX)
 	if err != nil {
@@ -43,6 +40,4 @@ func (h *Handlers) Send(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	println("sent!!!")
 }

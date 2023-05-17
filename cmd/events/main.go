@@ -13,15 +13,15 @@ func main() {
 
 	log.Default().Println("events starting up...")
 
-	env := flag.Bool(
+	env := flag.String(
 		"env",
-		false,
+		"",
 		"specify whether to use a dot env file or not",
 	)
 	_ = flag.String("url", "http://localhost:8545", "specify the url to use")
 	flag.Parse()
 
-	_, err := config.NewConfig(ctx, *env)
+	_, err := config.NewConfig(ctx, "chain.json", *env)
 	if err != nil {
 		log.Fatal(err)
 	}

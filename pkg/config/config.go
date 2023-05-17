@@ -15,9 +15,9 @@ type Config struct {
 	Chain              cw.ChainConfig
 }
 
-func NewConfig(ctx context.Context, fromFile bool) (*Config, error) {
-	if fromFile {
-		err := godotenv.Load(".env")
+func NewConfig(ctx context.Context, path, envpath string) (*Config, error) {
+	if envpath != "" {
+		err := godotenv.Load(envpath)
 		if err != nil {
 			return nil, err
 		}
@@ -30,7 +30,7 @@ func NewConfig(ctx context.Context, fromFile bool) (*Config, error) {
 		return nil, err
 	}
 
-	chain, err := cw.GetChain("chain.json")
+	chain, err := cw.GetChain(path)
 	if err != nil {
 		return nil, err
 	}

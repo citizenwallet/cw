@@ -3,7 +3,7 @@
     "chain": "CC",
     "icon": "citizen_chain",
     "rpc": [
-        "https://cw-ganache.techi.be"
+        "http://cw-ganache.techi.be"
     ],
     "features": [
         {
