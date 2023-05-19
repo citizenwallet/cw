@@ -37,6 +37,8 @@ github.com/daobrussels/smartcontracts v0.0.20 h1:OLHSI+2ptFOTjCTxVQtN1bRh53yod+a
 github.com/daobrussels/smartcontracts v0.0.20/go.mod h1:77NMWpKt//cZG8l/nupPMQGtgsXRWtltuLs3bRoszjQ=
 github.com/daobrussels/smartcontracts v0.0.22 h1:/cMwTwYbhj7b9hrVUM5zkZaW7vQvldiAp5xpC+2ByWg=
 github.com/daobrussels/smartcontracts v0.0.22/go.mod h1:77NMWpKt//cZG8l/nupPMQGtgsXRWtltuLs3bRoszjQ=
+github.com/daobrussels/smartcontracts v0.0.23 h1:oS4Z1KKj7B72hRZlfQ6hGaKMnSJE5r2nRcZMrzMcCUM=
+github.com/daobrussels/smartcontracts v0.0.23/go.mod h1:77NMWpKt//cZG8l/nupPMQGtgsXRWtltuLs3bRoszjQ=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

@@ -11,6 +11,7 @@ import (
 	"github.com/daobrussels/cw/pkg/common/wei"
 	"github.com/daobrussels/cw/pkg/community"
 	"github.com/daobrussels/cw/pkg/config"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -20,6 +21,7 @@ const (
 )
 
 func TestCommunity(t *testing.T) {
+	var entryPoint common.Address
 	var c *community.Community
 
 	ctx := context.Background()
@@ -48,6 +50,11 @@ func TestCommunity(t *testing.T) {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		entryPoint = c.EntryPoint
+
+		println("Community Entrypoint:")
+		println(c.EntryPoint.Hex())
 
 		amount := big.NewInt(int64(wei.EthToWei(1)))
 		err = c.FundPaymaster(amount)
@@ -87,5 +94,41 @@ func TestCommunity(t *testing.T) {
 
 		println("Profile address:")
 		println(profile.Hex())
+
+		// get account
+		acc, err := c.GetAccount(*accaddr)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		acccep, err := acc.EntryPoint(&bind.CallOpts{})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		println("Account entrypoint address:")
+		println(acccep.Hex())
+
+		if acccep.Hex() != entryPoint.Hex() {
+			log.Fatal("Account entrypoint address is not the same as community entrypoint address")
+		}
+
+		// get account
+		pr, err := c.GetProfile(*accaddr)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		pep, err := pr.EntryPoint(&bind.CallOpts{})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		println("Profile:")
+		println(pep.Hex())
+
+		if pep.Hex() != entryPoint.Hex() {
+			log.Fatal("Profile entrypoint address is not the same as community entrypoint address")
+		}
 	})
 }

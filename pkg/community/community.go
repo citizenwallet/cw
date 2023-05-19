@@ -6,10 +6,12 @@ import (
 
 	"github.com/daobrussels/cw/pkg/common/ethrequest"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/accfactory"
+	"github.com/daobrussels/smartcontracts/pkg/contracts/account"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/gateway"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/grfactory"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/paymaster"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/profactory"
+	"github.com/daobrussels/smartcontracts/pkg/contracts/profile"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -359,6 +361,24 @@ func (c *Community) CreateProfile(owner common.Address) (*common.Address, error)
 	}
 
 	return &addr, nil
+}
+
+func (c *Community) GetProfile(owner common.Address) (*profile.Profile, error) {
+	p, err := profile.NewProfile(owner, c.es.Client())
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
+
+func (c *Community) GetAccount(owner common.Address) (*account.Account, error) {
+	a, err := account.NewAccount(owner, c.es.Client())
+	if err != nil {
+		return nil, err
+	}
+
+	return a, nil
 }
 
 func setDefaultParameters(auth *bind.TransactOpts, nonce uint64) {
