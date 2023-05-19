@@ -46,7 +46,7 @@ func TestCommunity(t *testing.T) {
 	t.Run("test community deploy", func(t *testing.T) {
 
 		// deploy community
-		c, err = community.Deploy(es, s.PrivateKey, maddress, big.NewInt(int64(conf.Chain.ChainID)))
+		c, err = community.Deploy(es, s.PrivateKey, maddress, conf.Chain)
 		if err != nil {
 			log.Fatal(err)
 		}

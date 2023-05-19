@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/daobrussels/cw/pkg/common/ethrequest"
+	"github.com/daobrussels/cw/pkg/cw"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/accfactory"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/account"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/gateway"
@@ -16,48 +17,76 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+type CommunityAddress struct {
+	Gateway          common.Address `json:"gateway"`
+	Paymaster        common.Address `json:"paymaster"`
+	AccountFactory   common.Address `json:"accountFactory"`
+	GratitudeFactory common.Address `json:"gratitudeFactory"`
+	ProfileFactory   common.Address `json:"profileFactory"`
+	Chain            cw.ChainConfig `json:"chain"`
+}
+
 type Community struct {
 	es      *ethrequest.EthService
 	key     *ecdsa.PrivateKey
 	address common.Address
-	chainID *big.Int
+	chain   cw.ChainConfig
 
-	EntryPoint       common.Address
-	Gateway          *gateway.Gateway
-	Paymaster        *paymaster.Paymaster
-	AccountFactory   *accfactory.Accfactory
+	EntryPoint common.Address
+	Gateway    *gateway.Gateway
+
+	paddr     common.Address
+	Paymaster *paymaster.Paymaster
+
+	afaddr         common.Address
+	AccountFactory *accfactory.Accfactory
+
+	grfaddr          common.Address
 	GratitudeFactory *grfactory.Grfactory
-	ProfileFactory   *profactory.Profactory
+
+	prfaddr        common.Address
+	ProfileFactory *profactory.Profactory
+}
+
+func (c *Community) ExportAddress() CommunityAddress {
+	return CommunityAddress{
+		Gateway:          c.EntryPoint,
+		Paymaster:        c.paddr,
+		AccountFactory:   c.afaddr,
+		GratitudeFactory: c.grfaddr,
+		ProfileFactory:   c.prfaddr,
+		Chain:            c.chain,
+	}
 }
 
 // New instantiates a community struct using the provided addresses for the contracts
-func New(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Address, chainID *big.Int, gaddr, paddr, accaddr, graddr, proaddr common.Address) (*Community, error) {
+func New(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Address, chain cw.ChainConfig, addr CommunityAddress) (*Community, error) {
 	// instantiate gateway contract
-	g, err := gateway.NewGateway(gaddr, es.Client())
+	g, err := gateway.NewGateway(addr.Gateway, es.Client())
 	if err != nil {
 		return nil, err
 	}
 
 	// instantiate paymaster contract
-	p, err := paymaster.NewPaymaster(paddr, es.Client())
+	p, err := paymaster.NewPaymaster(addr.Paymaster, es.Client())
 	if err != nil {
 		return nil, err
 	}
 
 	// instantiate account factory contract
-	acc, err := accfactory.NewAccfactory(accaddr, es.Client())
+	acc, err := accfactory.NewAccfactory(addr.AccountFactory, es.Client())
 	if err != nil {
 		return nil, err
 	}
 
 	// instantiate gratitude factory contract
-	gr, err := grfactory.NewGrfactory(graddr, es.Client())
+	gr, err := grfactory.NewGrfactory(addr.GratitudeFactory, es.Client())
 	if err != nil {
 		return nil, err
 	}
 
 	// instantiate profile factory contract
-	pro, err := profactory.NewProfactory(proaddr, es.Client())
+	pro, err := profactory.NewProfactory(addr.ProfileFactory, es.Client())
 	if err != nil {
 		return nil, err
 	}
@@ -66,23 +95,27 @@ func New(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Addres
 		es:               es,
 		key:              key,
 		address:          address,
-		chainID:          chainID,
-		EntryPoint:       gaddr,
+		chain:            chain,
+		EntryPoint:       addr.Gateway,
 		Gateway:          g,
+		paddr:            addr.Paymaster,
 		Paymaster:        p,
+		afaddr:           addr.AccountFactory,
 		AccountFactory:   acc,
+		grfaddr:          addr.GratitudeFactory,
 		GratitudeFactory: gr,
+		prfaddr:          addr.ProfileFactory,
 		ProfileFactory:   pro,
 	}, nil
 }
 
 // Deploy instantiates a community struct and deploys the contracts
-func Deploy(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Address, chainID *big.Int) (*Community, error) {
+func Deploy(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Address, chain cw.ChainConfig) (*Community, error) {
 	c := &Community{
 		es:      es,
 		key:     key,
 		address: address,
-		chainID: chainID,
+		chain:   chain,
 	}
 
 	// instantiate gateway contract
@@ -120,7 +153,7 @@ func Deploy(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Add
 
 // NewTransactor returns a new transactor for the community
 func (c *Community) NewTransactor() (*bind.TransactOpts, error) {
-	return bind.NewKeyedTransactorWithChainID(c.key, c.chainID)
+	return bind.NewKeyedTransactorWithChainID(c.key, big.NewInt(int64(c.chain.ChainID)))
 }
 
 // NextNonce returns the next nonce for the community
@@ -173,11 +206,12 @@ func (c *Community) DeployPaymaster() error {
 	setDefaultParameters(auth, nonce)
 
 	// deploy the paymaster contract
-	_, _, p, err := paymaster.DeployPaymaster(auth, c.es.Client(), c.EntryPoint)
+	addr, _, p, err := paymaster.DeployPaymaster(auth, c.es.Client(), c.EntryPoint)
 	if err != nil {
 		return err
 	}
 
+	c.paddr = addr
 	c.Paymaster = p
 
 	return nil
@@ -224,11 +258,12 @@ func (c *Community) DeployAccountFactory() error {
 	setDefaultParameters(auth, nonce)
 
 	// deploy the account factory contract
-	_, _, acc, err := accfactory.DeployAccfactory(auth, c.es.Client(), c.EntryPoint)
+	addr, _, acc, err := accfactory.DeployAccfactory(auth, c.es.Client(), c.EntryPoint)
 	if err != nil {
 		return err
 	}
 
+	c.afaddr = addr
 	c.AccountFactory = acc
 
 	return nil
@@ -251,11 +286,12 @@ func (c *Community) DeployGratitudeFactory() error {
 	setDefaultParameters(auth, nonce)
 
 	// deploy the gratitude factory contract
-	_, _, gr, err := grfactory.DeployGrfactory(auth, c.es.Client(), c.EntryPoint)
+	addr, _, gr, err := grfactory.DeployGrfactory(auth, c.es.Client(), c.EntryPoint)
 	if err != nil {
 		return err
 	}
 
+	c.grfaddr = addr
 	c.GratitudeFactory = gr
 
 	return nil
@@ -337,11 +373,12 @@ func (c *Community) DeployProfileFactory() error {
 	setDefaultParameters(auth, nonce)
 
 	// deploy profile factory contract
-	_, _, pr, err := profactory.DeployProfactory(auth, c.es.Client(), c.EntryPoint)
+	addr, _, pr, err := profactory.DeployProfactory(auth, c.es.Client(), c.EntryPoint)
 	if err != nil {
 		return err
 	}
 
+	c.prfaddr = addr
 	c.ProfileFactory = pr
 
 	return nil
