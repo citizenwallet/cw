@@ -141,14 +141,14 @@ func DeployGratitudeFactory(es *ethrequest.EthService, key *ecdsa.PrivateKey, ad
 	return &addr, nil
 }
 
-func CreateGratitudeApp(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Address, chainID *big.Int, owner common.Address) (*common.Address, error) {
+func CreateGratitudeApp(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Address, chainID *big.Int, owner, faddr common.Address) (*common.Address, error) {
 	auth, err := bind.NewKeyedTransactorWithChainID(key, chainID)
 	if err != nil {
 		return nil, err
 	}
 
 	// get the next nonce for the main wallet
-	nonce, err := es.NextNonce(owner.Hex())
+	nonce, err := es.NextNonce(address.Hex())
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func CreateGratitudeApp(es *ethrequest.EthService, key *ecdsa.PrivateKey, addres
 	auth.GasLimit = uint64(30000000 - 1)
 
 	// instantiate gratitude factory contract
-	factory, err := grfactory.NewGrfactory(address, es.Client())
+	factory, err := grfactory.NewGrfactory(faddr, es.Client())
 	if err != nil {
 		return nil, err
 	}
@@ -262,11 +262,6 @@ func CreateProfile(es *ethrequest.EthService, key *ecdsa.PrivateKey, address com
 	if err != nil {
 		return nil, err
 	}
-
-	// ownerNonce, err := es.NextNonce(owner.Hex())
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	_, err = factory.CreateProfile(auth, owner, big.NewInt(int64(nonce)))
 	if err != nil {
