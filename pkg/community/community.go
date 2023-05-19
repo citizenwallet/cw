@@ -30,6 +30,7 @@ type Community struct {
 	ProfileFactory   *profactory.Profactory
 }
 
+// New instantiates a community struct using the provided addresses for the contracts
 func New(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Address, chainID *big.Int, gaddr, paddr, accaddr, graddr, proaddr common.Address) (*Community, error) {
 	// instantiate gateway contract
 	g, err := gateway.NewGateway(gaddr, es.Client())
@@ -75,6 +76,7 @@ func New(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Addres
 	}, nil
 }
 
+// Deploy instantiates a community struct and deploys the contracts
 func Deploy(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Address, chainID *big.Int) (*Community, error) {
 	c := &Community{
 		es:      es,
@@ -116,14 +118,17 @@ func Deploy(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Add
 	return c, nil
 }
 
+// NewTransactor returns a new transactor for the community
 func (c *Community) NewTransactor() (*bind.TransactOpts, error) {
 	return bind.NewKeyedTransactorWithChainID(c.key, c.chainID)
 }
 
+// NextNonce returns the next nonce for the community
 func (c *Community) NextNonce() (uint64, error) {
 	return c.es.NextNonce(c.address.Hex())
 }
 
+// DeployGateway deploys the gateway contract
 func (c *Community) DeployGateway() error {
 	auth, err := c.NewTransactor()
 	if err != nil {
@@ -151,6 +156,7 @@ func (c *Community) DeployGateway() error {
 	return nil
 }
 
+// DeployPaymaster deploys the paymaster contract
 func (c *Community) DeployPaymaster() error {
 	auth, err := c.NewTransactor()
 	if err != nil {
@@ -177,6 +183,7 @@ func (c *Community) DeployPaymaster() error {
 	return nil
 }
 
+// FundPaymaster funds the paymaster contract
 func (c *Community) FundPaymaster(amount *big.Int) error {
 	auth, err := c.NewTransactor()
 	if err != nil {
@@ -200,6 +207,7 @@ func (c *Community) FundPaymaster(amount *big.Int) error {
 	return nil
 }
 
+// DeployAccountFactory deploys the account factory contract
 func (c *Community) DeployAccountFactory() error {
 	auth, err := c.NewTransactor()
 	if err != nil {
@@ -226,6 +234,7 @@ func (c *Community) DeployAccountFactory() error {
 	return nil
 }
 
+// DeployGratitudeFactory deploys the gratitude factory contract
 func (c *Community) DeployGratitudeFactory() error {
 	auth, err := c.NewTransactor()
 	if err != nil {
@@ -252,6 +261,7 @@ func (c *Community) DeployGratitudeFactory() error {
 	return nil
 }
 
+// CreateGratitudeApp creates a gratitude app for the provided owner
 func (c *Community) CreateGratitudeApp(owner common.Address) (*common.Address, error) {
 	auth, err := c.NewTransactor()
 	if err != nil {
@@ -281,6 +291,7 @@ func (c *Community) CreateGratitudeApp(owner common.Address) (*common.Address, e
 	return &addr, nil
 }
 
+// CreateAccount creates an account for the provided owner
 func (c *Community) CreateAccount(owner common.Address) (*common.Address, error) {
 	auth, err := c.NewTransactor()
 	if err != nil {
@@ -309,6 +320,7 @@ func (c *Community) CreateAccount(owner common.Address) (*common.Address, error)
 	return &addr, nil
 }
 
+// DeployProfileFactory deploys the profile factory contract
 func (c *Community) DeployProfileFactory() error {
 	auth, err := c.NewTransactor()
 	if err != nil {
@@ -335,6 +347,7 @@ func (c *Community) DeployProfileFactory() error {
 	return nil
 }
 
+// CreateProfile creates a profile for the provided owner
 func (c *Community) CreateProfile(owner common.Address) (*common.Address, error) {
 	auth, err := c.NewTransactor()
 	if err != nil {
@@ -363,6 +376,7 @@ func (c *Community) CreateProfile(owner common.Address) (*common.Address, error)
 	return &addr, nil
 }
 
+// GetProfile returns the profile for the provided owner
 func (c *Community) GetProfile(owner common.Address) (*profile.Profile, error) {
 	p, err := profile.NewProfile(owner, c.es.Client())
 	if err != nil {
@@ -372,6 +386,7 @@ func (c *Community) GetProfile(owner common.Address) (*profile.Profile, error) {
 	return p, nil
 }
 
+// GetAccount returns the account for the provided owner
 func (c *Community) GetAccount(owner common.Address) (*account.Account, error) {
 	a, err := account.NewAccount(owner, c.es.Client())
 	if err != nil {
@@ -381,6 +396,7 @@ func (c *Community) GetAccount(owner common.Address) (*account.Account, error) {
 	return a, nil
 }
 
+// setDefaultParameters sets the nonce, value and gas limit for a default contract transaction
 func setDefaultParameters(auth *bind.TransactOpts, nonce uint64) {
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(0)
