@@ -32,18 +32,23 @@ Each individual program should be stateless and be able to be scaled up/down to 
 - modules
 - env
 
-⏳ Gas Station (ERC-4337) v1
+✅ Gas Station (ERC-4337) v1
 
 - Re-sign user transactions and take fees from master wallet
-- Call the contract mint function (address, amount) [**onlyOwner**]
-- Call the contract burn function (address, amount) [**onlyOwner**]
-- Associate/Dissociate an address with a push notification token [**only if address and sender match**]
-- Incoming webhook to mint/burn [**onlyOwner**]
+- Gateway (EntryPoint)
+- Paymaster [**onlyEntryPoint**]
+- Account Factory [**onlyEntryPoint**]
+- Gratitude Token Factory [**onlyEntryPoint**]
+- Profile Factory [**onlyEntryPoint**]
+- Notification Subscriber Factory [**onlyEntryPoint**]
+- Account [**onlyOwnerOrEntryPoint**]
+- Gratitude [**onlyOwnerOrEntryPoint**]
+- Profile [**onlyOwnerOrEntryPoint**]
+- Notification Subscriber [**onlyOwnerOrEntryPoint**]
 
-⚪️ Event Listener v1
+⏳ Event Listener v1
 
-- New pending transaction [**event**]
-- New confirmed transaction [**event**]
+- New block with relevant transactions [**event**]
 - Notify all tokens of an associated address [**onEvent**]
 
 ## Installation
