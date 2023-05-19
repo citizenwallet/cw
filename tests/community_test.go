@@ -20,7 +20,7 @@ const (
 )
 
 func TestCommunity(t *testing.T) {
-	var gaddr, afaddr, pfaddr, graddr *common.Address
+	var c *community.Community
 
 	ctx := context.Background()
 
@@ -43,61 +43,27 @@ func TestCommunity(t *testing.T) {
 
 	t.Run("test community deploy", func(t *testing.T) {
 
-		gaddr, err = community.DeployGateway(es, s.PrivateKey, maddress, big.NewInt(int64(conf.Chain.ChainID)))
+		// deploy community
+		c, err = community.Deploy(es, s.PrivateKey, maddress, big.NewInt(int64(conf.Chain.ChainID)))
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		println("Gateway address:")
-		println(gaddr.Hex())
-
-		paddr, pay, err := community.DeployPaymaster(es, s.PrivateKey, maddress, big.NewInt(int64(conf.Chain.ChainID)), *gaddr)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		println("Paymaster address:")
-		println(paddr.Hex())
 
 		amount := big.NewInt(int64(wei.EthToWei(1)))
-		err = community.FundPaymaster(pay, es, s.PrivateKey, maddress, big.NewInt(int64(conf.Chain.ChainID)), amount)
+		err = c.FundPaymaster(amount)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		println("Paymaster funded:")
 		println(amount.String())
-
-		afaddr, err = community.DeployAccountFactory(es, s.PrivateKey, maddress, big.NewInt(int64(conf.Chain.ChainID)), *gaddr)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		println("Account Factory address:")
-		println(afaddr.Hex())
-
-		pfaddr, err = community.DeployProfileFactory(es, s.PrivateKey, maddress, big.NewInt(int64(conf.Chain.ChainID)), *gaddr)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		println("Profile Factory address:")
-		println(pfaddr.Hex())
-
-		graddr, err = community.DeployGratitudeFactory(es, s.PrivateKey, maddress, big.NewInt(int64(conf.Chain.ChainID)), *gaddr)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		println("Gratitude Factory address:")
-		println(graddr.Hex())
 	})
 
 	t.Run("test account deploy on community", func(t *testing.T) {
 		owner := common.HexToAddress(nobalancehexaddr)
 
 		// create an account
-		accaddr, err := community.CreateAccount(es, s.PrivateKey, maddress, big.NewInt(int64(conf.Chain.ChainID)), owner, *afaddr)
+		accaddr, err := c.CreateAccount(owner)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -105,7 +71,7 @@ func TestCommunity(t *testing.T) {
 		println("Account address:")
 		println(accaddr.Hex())
 
-		grtaddr, err := community.CreateGratitudeApp(es, s.PrivateKey, maddress, big.NewInt(int64(conf.Chain.ChainID)), *accaddr, *graddr)
+		grtaddr, err := c.CreateGratitudeApp(*accaddr)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -114,7 +80,7 @@ func TestCommunity(t *testing.T) {
 		println(grtaddr.Hex())
 
 		// create a profile for the corresponding account
-		profile, err := community.CreateProfile(es, s.PrivateKey, maddress, big.NewInt(int64(conf.Chain.ChainID)), *accaddr, *pfaddr)
+		profile, err := c.CreateProfile(*accaddr)
 		if err != nil {
 			log.Fatal(err)
 		}
