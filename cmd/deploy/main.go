@@ -68,11 +68,17 @@ func main() {
 		"specify path to env",
 	)
 
+	chain := flag.String(
+		"chain",
+		"chain.json",
+		"specify path to chain.json",
+	)
+
 	flag.Parse()
 
-	conf, err := config.NewConfig(ctx, "chain.json", *env)
+	conf, err := config.NewConfig(ctx, *chain, *env)
 	if err != nil {
-		log.Default().Println("invalid or missing chain.json file")
+		log.Default().Println(fmt.Sprintf("invalid or missing chain config file at ./%s", *chain))
 		log.Default().Println("should be:")
 		log.Default().Println(chainTemplate)
 		log.Default().Println("")
