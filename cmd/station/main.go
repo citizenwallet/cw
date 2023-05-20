@@ -74,6 +74,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	log.Default().Println("serving...")
+
 	err = router.NewServer(s, es, c).Start(*port)
 	if err != nil {
 		log.Fatal(err)

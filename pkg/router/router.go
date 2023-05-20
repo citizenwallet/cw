@@ -57,7 +57,7 @@ func (r *Router) Start(port int) error {
 
 	cr.Post("/transaction", transaction.Send)
 
-	cr.Route("/gateway", func(cr chi.Router) {
+	cr.Route("/community", func(cr chi.Router) {
 		cr.Get("/", community.Config)
 	})
 
