@@ -8,49 +8,34 @@ import (
 	"github.com/daobrussels/cw/pkg/common/response"
 	"github.com/daobrussels/cw/pkg/common/supply"
 	"github.com/daobrussels/cw/pkg/community"
-	"github.com/daobrussels/cw/pkg/config"
 	"github.com/daobrussels/cw/pkg/hello"
 	"github.com/daobrussels/cw/pkg/push"
 	"github.com/daobrussels/cw/pkg/server"
 	"github.com/daobrussels/cw/pkg/token"
 	"github.com/daobrussels/cw/pkg/transaction"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 type Router struct {
-	// ...
-	conf *config.Config
+	s  *supply.Supply
+	es *ethrequest.EthService
+	c  *community.Community
 }
 
-func NewServer(conf *config.Config) server.Server {
+func NewServer(s *supply.Supply,
+	es *ethrequest.EthService,
+	c *community.Community) server.Server {
 	return &Router{
-		conf: conf,
+		s,
+		es,
+		c,
 	}
 }
 
 // implement the Server interface
 func (r *Router) Start(port int) error {
-
-	s, err := supply.New(r.conf.SupplyWalletKey)
-	if err != nil {
-		return err
-	}
-
-	responder := response.NewResponder(s)
-	ethservice, err := ethrequest.NewEthService(r.conf.Chain.RPC[0])
-	if err != nil {
-		return err
-	}
-	defer ethservice.Close()
-
-	maddress := common.HexToAddress(s.Address)
-
-	c, err := community.Deploy(ethservice, s.PrivateKey, maddress, r.conf.Chain)
-	if err != nil {
-		return err
-	}
+	responder := response.NewResponder(r.s)
 
 	cr := chi.NewRouter()
 
@@ -58,12 +43,12 @@ func (r *Router) Start(port int) error {
 	cr.Use(OptionsMiddleware)
 	cr.Use(HealthMiddleware)
 	cr.Use(middleware.Compress(9))
-	cr.Use(createSignatureMiddleware(r.conf.SupplyWalletKey))
+	cr.Use(createSignatureMiddleware(r.s.PrivateHexKey))
 
 	// instantiate handlers
-	hello := hello.NewHandlers(r.conf.Chain, responder)
-	transaction := transaction.NewHandlers(&r.conf.Chain, s, ethservice)
-	community := community.NewHandlers(responder, c)
+	hello := hello.NewHandlers(r.c.Chain, responder)
+	transaction := transaction.NewHandlers(&r.c.Chain, r.s, r.es)
+	community := community.NewHandlers(responder, r.c)
 	token := token.NewHandlers()
 	push := push.NewHandlers()
 

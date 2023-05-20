@@ -30,7 +30,7 @@ type Community struct {
 	es      *ethrequest.EthService
 	key     *ecdsa.PrivateKey
 	address common.Address
-	chain   cw.ChainConfig
+	Chain   cw.ChainConfig
 
 	EntryPoint common.Address
 	Gateway    *gateway.Gateway
@@ -55,12 +55,12 @@ func (c *Community) ExportAddress() CommunityAddress {
 		AccountFactory:   c.afaddr,
 		GratitudeFactory: c.grfaddr,
 		ProfileFactory:   c.prfaddr,
-		Chain:            c.chain,
+		Chain:            c.Chain,
 	}
 }
 
 // New instantiates a community struct using the provided addresses for the contracts
-func New(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Address, chain cw.ChainConfig, addr CommunityAddress) (*Community, error) {
+func New(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Address, addr CommunityAddress) (*Community, error) {
 	// instantiate gateway contract
 	g, err := gateway.NewGateway(addr.Gateway, es.Client())
 	if err != nil {
@@ -95,7 +95,7 @@ func New(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Addres
 		es:               es,
 		key:              key,
 		address:          address,
-		chain:            chain,
+		Chain:            addr.Chain,
 		EntryPoint:       addr.Gateway,
 		Gateway:          g,
 		paddr:            addr.Paymaster,
@@ -115,7 +115,7 @@ func Deploy(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Add
 		es:      es,
 		key:     key,
 		address: address,
-		chain:   chain,
+		Chain:   chain,
 	}
 
 	// instantiate gateway contract
@@ -153,7 +153,7 @@ func Deploy(es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Add
 
 // NewTransactor returns a new transactor for the community
 func (c *Community) NewTransactor() (*bind.TransactOpts, error) {
-	return bind.NewKeyedTransactorWithChainID(c.key, big.NewInt(int64(c.chain.ChainID)))
+	return bind.NewKeyedTransactorWithChainID(c.key, big.NewInt(int64(c.Chain.ChainID)))
 }
 
 // NextNonce returns the next nonce for the community

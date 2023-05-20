@@ -27,3 +27,4 @@ go.work
 
 # CW
 *.community.json
+!test.community.json

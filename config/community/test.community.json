@@ -1,0 +1,42 @@
+{
+    "gateway": "0x3cee6a52648d446f94b72135a56fd4a5ba769ba8",
+    "paymaster": "0x1de322b7756f8af8fe207d0df6766dab1afca624",
+    "accountFactory": "0xb90922364f46e3ce87063b8b0fccf74a12555ac7",
+    "gratitudeFactory": "0xd22991083cc1dd2a90654bc5fab6629f44a77524",
+    "profileFactory": "0xcb735cf1385b450502fb4c205d105effdbe92f82",
+    "chain": {
+        "name": "Mumbai",
+        "chain": "Polygon",
+        "icon": "polygon",
+        "rpc": [
+            "https://matic-mumbai.chainstacklabs.com",
+            "https://rpc-mumbai.maticvigil.com",
+            "https://matic-testnet-archive-rpc.bwarelabs.com",
+            "https://polygon-mumbai-bor.publicnode.com"
+        ],
+        "features": null,
+        "faucets": [
+            "https://faucet.polygon.technology/"
+        ],
+        "nativeCurrency": {
+            "name": "MATIC",
+            "symbol": "MATIC",
+            "decimals": 18
+        },
+        "infoURL": "https://polygon.technology/",
+        "shortName": "maticmum",
+        "chainId": 80001,
+        "networkId": 80001,
+        "slip44": 0,
+        "ens": {
+            "registry": ""
+        },
+        "explorers": [
+            {
+                "name": "polygonscan",
+                "url": "https://mumbai.polygonscan.com",
+                "standard": "EIP3091"
+            }
+        ]
+    }
+}

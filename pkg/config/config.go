@@ -39,3 +39,23 @@ func NewConfig(ctx context.Context, path, envpath string) (*Config, error) {
 
 	return conf, nil
 }
+
+func NewConfigWChain(ctx context.Context, envpath string, chain cw.ChainConfig) (*Config, error) {
+	if envpath != "" {
+		err := godotenv.Load(envpath)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	conf := &Config{}
+
+	err := envconfig.Process(ctx, conf)
+	if err != nil {
+		return nil, err
+	}
+
+	conf.Chain = chain
+
+	return conf, nil
+}

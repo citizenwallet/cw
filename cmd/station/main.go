@@ -2,11 +2,18 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
+	"os"
 
+	"github.com/daobrussels/cw/pkg/common/ethrequest"
+	"github.com/daobrussels/cw/pkg/common/supply"
+	"github.com/daobrussels/cw/pkg/community"
 	"github.com/daobrussels/cw/pkg/config"
 	"github.com/daobrussels/cw/pkg/router"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func main() {
@@ -16,20 +23,58 @@ func main() {
 
 	env := flag.String(
 		"env",
-		"",
-		"specify whether to use a dot env file or not",
+		".env",
+		"specify path to env",
 	)
-	port := flag.Int("port", 3000, "specify the port to use")
-	_ = flag.String("chainUrl", "http://localhost:8545", "specify the url to use")
-	_ = flag.Int("chainId", 80001, "specify the chain id to use")
+
+	port := flag.Int(
+		"port",
+		3000,
+		"specify port to listen on",
+	)
+
+	path := flag.String(
+		"c",
+		"./config/community/test.community.json",
+		"specify path to a *.community.json file",
+	)
+
 	flag.Parse()
 
-	conf, err := config.NewConfig(ctx, "chain.json", *env)
+	b, err := os.ReadFile(*path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = router.NewServer(conf).Start(*port)
+	var addr community.CommunityAddress
+	err = json.Unmarshal(b, &addr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	es, err := ethrequest.NewEthService(addr.Chain.RPC[0])
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer es.Close()
+
+	conf, err := config.NewConfigWChain(ctx, *env, addr.Chain)
+	if err != nil {
+		log.Default().Println(fmt.Sprintf("invalid or missing chain config file at %s", *path))
+		log.Fatal(err)
+	}
+
+	s, err := supply.New(conf.SupplyWalletKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c, err := community.New(es, s.PrivateKey, common.HexToAddress(s.Address), addr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = router.NewServer(s, es, c).Start(*port)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -78,7 +78,7 @@ func main() {
 
 	conf, err := config.NewConfig(ctx, *chain, *env)
 	if err != nil {
-		log.Default().Println(fmt.Sprintf("invalid or missing chain config file at ./config/chain/%s", *chain))
+		log.Default().Println(fmt.Sprintf("invalid or missing chain config file at %s", *chain))
 		log.Default().Println("should be:")
 		log.Default().Println(chainTemplate)
 		log.Default().Println("")
