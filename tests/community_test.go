@@ -42,6 +42,7 @@ func TestCommunity(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer es.Close()
 
 	t.Run("test community deploy", func(t *testing.T) {
 

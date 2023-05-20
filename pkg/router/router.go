@@ -14,6 +14,7 @@ import (
 	"github.com/daobrussels/cw/pkg/server"
 	"github.com/daobrussels/cw/pkg/token"
 	"github.com/daobrussels/cw/pkg/transaction"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -44,6 +45,13 @@ func (r *Router) Start(port int) error {
 	}
 	defer ethservice.Close()
 
+	maddress := common.HexToAddress(s.Address)
+
+	c, err := community.Deploy(ethservice, s.PrivateKey, maddress, r.conf.Chain)
+	if err != nil {
+		return err
+	}
+
 	cr := chi.NewRouter()
 
 	// configure middleware
@@ -55,7 +63,7 @@ func (r *Router) Start(port int) error {
 	// instantiate handlers
 	hello := hello.NewHandlers(r.conf.Chain, responder)
 	transaction := transaction.NewHandlers(&r.conf.Chain, s, ethservice)
-	community := community.NewHandlers(s, ethservice, responder, &r.conf.Chain)
+	community := community.NewHandlers(responder, c)
 	token := token.NewHandlers()
 	push := push.NewHandlers()
 
@@ -65,7 +73,7 @@ func (r *Router) Start(port int) error {
 	cr.Post("/transaction", transaction.Send)
 
 	cr.Route("/gateway", func(cr chi.Router) {
-		cr.Post("/deploy", community.Deploy)
+		cr.Get("/", community.Config)
 	})
 
 	cr.Route("/token", func(cr chi.Router) {

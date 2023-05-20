@@ -24,3 +24,6 @@ go.work
 *.env
 !.example.env
 !.example.*.env
+
+# CW
+*.community.json

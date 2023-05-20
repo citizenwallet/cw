@@ -437,5 +437,5 @@ func (c *Community) GetAccount(owner common.Address) (*account.Account, error) {
 func setDefaultParameters(auth *bind.TransactOpts, nonce uint64) {
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(0)
-	auth.GasLimit = uint64(30000000 - 1)
+	auth.GasLimit = uint64(0)
 }

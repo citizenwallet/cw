@@ -19,10 +19,6 @@ const (
 	ResponseTypeSecure ResponseType = "secure"
 )
 
-type AddressResponse struct {
-	Address string `json:"address"`
-}
-
 type Response struct {
 	ResponseType ResponseType `json:"response_type"`
 	Secure       string       `json:"secure,omitempty"`
