@@ -1,14 +1,17 @@
 package request
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"strings"
 	"time"
 
+	"github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/ecies"
+	bitcoin_ecies "github.com/gitzhou/bitcoin-ecies"
 )
 
 const (
@@ -25,7 +28,7 @@ type Request struct {
 func New(address string, data []byte) *Request {
 	return &Request{
 		Version: 1,
-		Expiry:  time.Now().Add(10 * time.Second),
+		Expiry:  time.Now().Add(10 * time.Second).UTC(),
 		Address: address,
 		Data:    data,
 	}
@@ -33,49 +36,36 @@ func New(address string, data []byte) *Request {
 
 // Encrypt encrypts the request data using the public key, result is base64 encoded
 func (r *Request) Encrypt(pubhexkey string) (string, error) {
-	publicKey, err := crypto.DecompressPubkey(common.Hex2Bytes(pubhexkey))
+	publicKey, err := secp256k1.ParsePubKey(common.Hex2Bytes(pubhexkey))
 	if err != nil {
 		return "", err
 	}
 
 	// marshal the request to bytes
-	b, err := json.Marshal(r)
+	msg, err := json.Marshal(r)
 	if err != nil {
 		return "", err
 	}
 
-	// encrypt the request data
-	encrypted, err := ecies.Encrypt(rand.Reader, ecies.ImportECDSAPublic(publicKey), b, nil, nil)
+	encrypted, err := bitcoin_ecies.EncryptMessage(string(msg), publicKey.SerializeUncompressed())
 	if err != nil {
 		return "", err
 	}
 
-	// base64 encode the encrypted data
-	return base64.StdEncoding.EncodeToString(encrypted), nil
+	return encrypted, nil
 }
 
 // Decrypt decrypts the base64 encoded request data using a private key
 func Decrypt(hexkey string, req string) (*Request, error) {
-	b, err := base64.StdEncoding.DecodeString(req)
-	if err != nil {
-		return nil, err
-	}
-
-	// decode the private key
-	privateKey, err := crypto.HexToECDSA(hexkey)
-	if err != nil {
-		return nil, err
-	}
-
 	// decrypt the request data
-	decrypted, err := ecies.ImportECDSA(privateKey).Decrypt(b, nil, nil)
+	decrypted, err := bitcoin_ecies.DecryptMessage(req, common.Hex2Bytes(hexkey))
 	if err != nil {
 		return nil, err
 	}
 
 	// unmarshal the request
 	r := &Request{}
-	err = json.Unmarshal(decrypted, r)
+	err = json.Unmarshal([]byte(decrypted), r)
 	if err != nil {
 		return nil, err
 	}
@@ -97,45 +87,49 @@ func (r *Request) VerifySignature(signature string) bool {
 	}
 
 	// hash the request data
-	h := crypto.HashData(crypto.NewKeccakState(), b)
+	h := crypto.Keccak256Hash(b)
 
 	// decode the signature
-	sig, err := base64.StdEncoding.DecodeString(signature)
+	sig, err := hexutil.Decode(signature)
 	if err != nil {
 		return false
 	}
 
 	// recover the public key from the signature
-	pubkey, err := crypto.SigToPub(h.Bytes(), sig)
+	pubkey, _, err := ecdsa.RecoverCompact(sig, h.Bytes())
 	if err != nil {
 		return false
 	}
 
 	// derive the address from the public key
-	address := crypto.PubkeyToAddress(*pubkey)
+	address := crypto.PubkeyToAddress(*pubkey.ToECDSA())
+
+	recoveredaddr := address.Hex()
 
 	// the address in the request must match the address derived from the signature
-	if address.Hex() != string(r.Address) {
+	if strings.ToLower(recoveredaddr) != strings.ToLower(r.Address) {
 		return false
 	}
 
-	// compress the public key
-	compressed := crypto.CompressPubkey(pubkey)
+	// create ModNScalars from the signature manually
+	sr, ss := secp256k1.ModNScalar{}, secp256k1.ModNScalar{}
 
-	// remove the recovery id from the signature
-	cleanSig := sig[:len(sig)-1]
+	// set the byteslices manually from the signature
+	sr.SetByteSlice(sig[1:33])
+	ss.SetByteSlice(sig[33:65])
 
-	// verify the signature with the derived public key and the hash of the request data
-	return crypto.VerifySignature(compressed, h.Bytes(), cleanSig)
+	// create a new signature from the ModNScalars
+	ns := ecdsa.NewSignature(&sr, &ss)
+	if err != nil {
+		return false
+	}
+
+	// verify the signature
+	return ns.Verify(h.Bytes(), pubkey)
 }
 
 // GenerateSignature generates a signature for the request using a private key
 func (r *Request) GenerateSignature(hexkey string) (string, error) {
-	privateKey, err := crypto.HexToECDSA(hexkey)
-	if err != nil {
-		return "", err
-	}
-
 	// marshal the request to bytes
 	b, err := json.Marshal(r)
 	if err != nil {
@@ -143,11 +137,57 @@ func (r *Request) GenerateSignature(hexkey string) (string, error) {
 	}
 
 	// hash the request data
-	h := crypto.HashData(crypto.NewKeccakState(), b)
+	h := crypto.Keccak256Hash(b)
+
+	privateKey := secp256k1.PrivKeyFromBytes(common.Hex2Bytes(hexkey))
 
 	// sign the hash of the request data
-	s, err := crypto.Sign(h.Bytes(), privateKey)
+	s := ecdsa.SignCompact(privateKey, h.Bytes(), false)
+	if s == nil {
+		return "", err
+	}
 
 	// base64 encode the signature
-	return base64.StdEncoding.EncodeToString(s), nil
+	return hexutil.Encode(s), nil
+}
+
+// RecoverAddress uses the provided signature and returns the corresponding address
+func (r *Request) RecoverAddress(signature string) (*common.Address, error) {
+	// marshal the request to bytes
+	b, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// has the request expired?
+	if time.Now().After(r.Expiry) {
+		return nil, err
+	}
+
+	// hash the request data
+	h := crypto.Keccak256Hash(b)
+
+	// decode the signature
+	sig, err := hexutil.Decode(signature)
+	if err != nil {
+		return nil, err
+	}
+
+	// recover the public key from the signature
+	pubkey, _, err := ecdsa.RecoverCompact(sig, h.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
+	// derive the address from the public key
+	address := crypto.PubkeyToAddress(*pubkey.ToECDSA())
+
+	recoveredaddr := address.Hex()
+
+	// the address in the request must match the address derived from the signature
+	if strings.ToLower(recoveredaddr) != strings.ToLower(r.Address) {
+		return nil, errors.New("address mismatch")
+	}
+
+	return &address, nil
 }

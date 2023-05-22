@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/daobrussels/cw/pkg/common/ethrequest"
 	"github.com/daobrussels/cw/pkg/common/response"
 	"github.com/daobrussels/cw/pkg/common/supply"
-	"github.com/daobrussels/cw/pkg/config"
+	"github.com/daobrussels/cw/pkg/community"
 	"github.com/daobrussels/cw/pkg/hello"
 	"github.com/daobrussels/cw/pkg/push"
 	"github.com/daobrussels/cw/pkg/server"
@@ -17,25 +18,24 @@ import (
 )
 
 type Router struct {
-	// ...
-	conf *config.Config
+	s  *supply.Supply
+	es *ethrequest.EthService
+	c  *community.Community
 }
 
-func NewServer(conf *config.Config) server.Server {
+func NewServer(s *supply.Supply,
+	es *ethrequest.EthService,
+	c *community.Community) server.Server {
 	return &Router{
-		conf: conf,
+		s,
+		es,
+		c,
 	}
 }
 
 // implement the Server interface
 func (r *Router) Start(port int) error {
-
-	s, err := supply.New(r.conf.SupplyWalletKey)
-	if err != nil {
-		return err
-	}
-
-	responder := response.NewResponder(s)
+	responder := response.NewResponder(r.s)
 
 	cr := chi.NewRouter()
 
@@ -43,11 +43,12 @@ func (r *Router) Start(port int) error {
 	cr.Use(OptionsMiddleware)
 	cr.Use(HealthMiddleware)
 	cr.Use(middleware.Compress(9))
-	cr.Use(SignatureMiddleware)
+	cr.Use(createSignatureMiddleware(r.s.PrivateHexKey))
 
 	// instantiate handlers
-	hello := hello.NewHandlers(responder)
-	transaction := transaction.NewHandlers()
+	hello := hello.NewHandlers(r.c.Chain, responder)
+	transaction := transaction.NewHandlers(&r.c.Chain, r.s, r.es)
+	community := community.NewHandlers(responder, r.c)
 	token := token.NewHandlers()
 	push := push.NewHandlers()
 
@@ -55,6 +56,17 @@ func (r *Router) Start(port int) error {
 	cr.Get("/hello", hello.Hello)
 
 	cr.Post("/transaction", transaction.Send)
+
+	cr.Route("/community", func(cr chi.Router) {
+		cr.Get("/", community.Config)
+
+		cr.Route("/account", func(cr chi.Router) {
+			cr.Post("/", community.CreateAccount)        // create an account and return address
+			cr.Post("/profile", community.CreateAccount) // attach a profile and return address
+		})
+
+		cr.Post("/op", community.SubmitOp) // submit an operation
+	})
 
 	cr.Route("/token", func(cr chi.Router) {
 		cr.Post("/mint", token.Mint)

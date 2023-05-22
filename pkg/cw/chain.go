@@ -36,22 +36,20 @@ type ChainConfig struct {
 	NativeCurrency ChainNativeCurrency `json:"nativeCurrency"`
 	InfoURL        string              `json:"infoURL"`
 	ShortName      string              `json:"shortName"`
-	ChainID        int                 `json:"chainID"`
-	NetworkID      int                 `json:"networkID"`
+	ChainID        int                 `json:"chainId"`
+	NetworkID      int                 `json:"networkId"`
 	Slip44         int                 `json:"slip44"`
 	ENS            ChainENS            `json:"ens"`
 	Explorers      []ChainExplorer     `json:"explorers"`
 }
 
 // GetChain returns the chain config for the local chain.json file
-func GetChain() (*ChainConfig, error) {
+func GetChain(path string) (*ChainConfig, error) {
 	// read the chain.json file
-	f, err := os.Open("chain.json")
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-
-	println(f.Name())
 
 	// decode the chain.json file
 	chain := &ChainConfig{}

@@ -3,6 +3,7 @@ package router
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -46,45 +47,70 @@ func HealthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+type secureRequest struct {
+	Secure string `json:"secure"`
+}
+
 // SignatureMiddleware is a middleware that checks the signature of the request against the request body
-func SignatureMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pubkey := r.Header.Get(cw.PubKeyHeader)
-		if pubkey == "" {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
+func createSignatureMiddleware(hexkey string) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			pubkey := r.Header.Get(cw.PubKeyHeader)
+			if pubkey == "" {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
 
-		ctx := context.WithValue(r.Context(), cw.ContextKeyPubKey, pubkey)
+			ctx := context.WithValue(r.Context(), cw.ContextKeyPubKey, pubkey)
 
-		if r.Method == http.MethodGet {
-			// GET requests are not signed
+			if r.Method == http.MethodGet || strings.Contains(r.URL.Path, "/gateway") {
+				// GET requests are not signed
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+
+			// retrieve request signature
+			signature := r.Header.Get(cw.SignatureHeader)
+			if signature == "" {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			// unmarshal secure request
+			var sec secureRequest
+			err := json.NewDecoder(r.Body).Decode(&sec)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			// decrypt secure request
+			req, err := request.Decrypt(hexkey, sec.Secure)
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			// verify signature
+			if !req.VerifySignature(signature) {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			addr, err := req.RecoverAddress(signature)
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			ctx = context.WithValue(ctx, cw.ContextKeyAddress, addr.Hex())
+
+			r.Body = io.NopCloser(strings.NewReader(string(req.Data)))
+			r.ContentLength = int64(len(req.Data))
+
 			next.ServeHTTP(w, r.WithContext(ctx))
-			return
-		}
-
-		// check request signature
-		var req request.Request
-
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		signature := r.Header.Get(cw.SignatureHeader)
-		if signature == "" {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		if !req.VerifySignature(signature) {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+		})
+	}
 }
 
 // OptionsMiddleware ensures that we return the correct headers for CORS requests
