@@ -433,6 +433,44 @@ func (c *Community) GetAccount(owner common.Address) (*account.Account, error) {
 	return a, nil
 }
 
+// SubmitOp submits an operation to the gateway for processing
+func (c *Community) SubmitOp(sender common.Address, data []byte) error {
+	auth, err := c.NewTransactor()
+	if err != nil {
+		return err
+	}
+
+	// get the next nonce for the main wallet
+	nonce, err := c.NextNonce()
+	if err != nil {
+		return err
+	}
+
+	// set default parameters
+	setDefaultParameters(auth, nonce)
+
+	senderNonce, err := c.es.NextNonce(sender.Hex())
+	if err != nil {
+		return err
+	}
+
+	// TODO: test and check UserOperation signature and required data
+	// This is still not tested and may not work
+	op := &gateway.UserOperation{
+		Sender:           sender,
+		Nonce:            big.NewInt(int64(senderNonce)),
+		CallData:         data,
+		PaymasterAndData: c.paddr.Bytes(),
+	}
+
+	_, err = c.Gateway.HandleOps(auth, []gateway.UserOperation{*op}, c.address)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // setDefaultParameters sets the nonce, value and gas limit for a default contract transaction
 func setDefaultParameters(auth *bind.TransactOpts, nonce uint64) {
 	auth.Nonce = big.NewInt(int64(nonce))

@@ -59,6 +59,11 @@ func (r *Router) Start(port int) error {
 
 	cr.Route("/community", func(cr chi.Router) {
 		cr.Get("/", community.Config)
+
+		cr.Route("/account", func(cr chi.Router) {
+			cr.Post("/", community.CreateAccount) // create an account and return address
+			cr.Post("/op", community.SubmitOp)    // submit an operation
+		})
 	})
 
 	cr.Route("/token", func(cr chi.Router) {

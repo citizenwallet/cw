@@ -87,7 +87,6 @@ func createSignatureMiddleware(hexkey string) func(next http.Handler) http.Handl
 			// decrypt secure request
 			req, err := request.Decrypt(hexkey, sec.Secure)
 			if err != nil {
-				println(err.Error())
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
@@ -97,6 +96,14 @@ func createSignatureMiddleware(hexkey string) func(next http.Handler) http.Handl
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
+
+			addr, err := req.RecoverAddress(signature)
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			ctx = context.WithValue(ctx, cw.ContextKeyAddress, addr.Hex())
 
 			r.Body = io.NopCloser(strings.NewReader(string(req.Data)))
 			r.ContentLength = int64(len(req.Data))

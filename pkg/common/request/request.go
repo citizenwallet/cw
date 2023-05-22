@@ -2,6 +2,7 @@ package request
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
@@ -148,4 +149,45 @@ func (r *Request) GenerateSignature(hexkey string) (string, error) {
 
 	// base64 encode the signature
 	return hexutil.Encode(s), nil
+}
+
+// RecoverAddress uses the provided signature and returns the corresponding address
+func (r *Request) RecoverAddress(signature string) (*common.Address, error) {
+	// marshal the request to bytes
+	b, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// has the request expired?
+	if time.Now().After(r.Expiry) {
+		return nil, err
+	}
+
+	// hash the request data
+	h := crypto.Keccak256Hash(b)
+
+	// decode the signature
+	sig, err := hexutil.Decode(signature)
+	if err != nil {
+		return nil, err
+	}
+
+	// recover the public key from the signature
+	pubkey, _, err := ecdsa.RecoverCompact(sig, h.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
+	// derive the address from the public key
+	address := crypto.PubkeyToAddress(*pubkey.ToECDSA())
+
+	recoveredaddr := address.Hex()
+
+	// the address in the request must match the address derived from the signature
+	if strings.ToLower(recoveredaddr) != strings.ToLower(r.Address) {
+		return nil, errors.New("address mismatch")
+	}
+
+	return &address, nil
 }
