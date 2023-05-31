@@ -12,6 +12,7 @@ type Config struct {
 	// ...
 	PaymentProviderKey string `env:"PAYMENT_PROVIDER_KEY,required"`
 	SupplyWalletKey    string `env:"SUPPLY_WALLET_KEY,required"`
+	RegensIPFSUploader string `env:"REGENS_IPFS_UPLOADER,required"`
 	Chain              cw.ChainConfig
 }
 

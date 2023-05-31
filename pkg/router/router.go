@@ -61,8 +61,16 @@ func (r *Router) Start(port int) error {
 		cr.Get("/", community.Config)
 
 		cr.Route("/account", func(cr chi.Router) {
-			cr.Post("/", community.CreateAccount)        // create an account and return address
-			cr.Post("/profile", community.CreateAccount) // attach a profile and return address
+			cr.Post("/", community.CreateAccount) // create an account and return address
+		})
+
+		cr.Route(("/account/{account_id}"), func(cr chi.Router) {
+			cr.Post("/profile", community.CreateProfile) // attach a profile and return address
+		})
+
+		cr.Route("/regensunite", func(cr chi.Router) {
+			cr.Post("/voucher", community.CreateVoucher) // mint regens unite
+			cr.Get("/voucher", community.GetVouchers)    // get regens unite balance
 		})
 
 		cr.Post("/op", community.SubmitOp) // submit an operation

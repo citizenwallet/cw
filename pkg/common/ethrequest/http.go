@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 )
@@ -73,11 +72,6 @@ func (r *RawService) Post(method string, body []any) ([]byte, error) {
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		b, err := io.ReadAll(resp.Body)
-		if err == nil {
-			println(string(b))
-		}
-
 		return nil, fmt.Errorf("req: failed status code %d", resp.StatusCode)
 	}
 

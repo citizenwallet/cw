@@ -55,15 +55,26 @@ type secureRequest struct {
 func createSignatureMiddleware(hexkey string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			println(r.URL.Path)
 			pubkey := r.Header.Get(cw.PubKeyHeader)
 			if pubkey == "" {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), cw.ContextKeyPubKey, pubkey)
+			addrkey := r.Header.Get(cw.AddressHeader)
+			if addrkey == "" {
+				println("addrkey" + addrkey)
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
 
-			if r.Method == http.MethodGet || strings.Contains(r.URL.Path, "/gateway") {
+			ctx := context.WithValue(r.Context(), cw.ContextKeyPubKey, pubkey)
+			ctx = context.WithValue(ctx, cw.ContextKeyAddress, addrkey)
+
+			println(r.URL.Path)
+
+			if r.Method == http.MethodGet || strings.Contains(r.URL.Path, "/regensunite") || strings.Contains(r.URL.Path, "/community") {
 				// GET requests are not signed
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
@@ -99,6 +110,11 @@ func createSignatureMiddleware(hexkey string) func(next http.Handler) http.Handl
 
 			addr, err := req.RecoverAddress(signature)
 			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			if addr.Hex() != addrkey {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}

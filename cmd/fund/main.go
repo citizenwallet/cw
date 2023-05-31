@@ -6,20 +6,20 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
 
 	"github.com/daobrussels/cw/pkg/common/ethrequest"
 	"github.com/daobrussels/cw/pkg/common/supply"
 	"github.com/daobrussels/cw/pkg/community"
 	"github.com/daobrussels/cw/pkg/config"
-	"github.com/daobrussels/cw/pkg/router"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 func main() {
 	ctx := context.Background()
 
-	log.Default().Println("station starting up...")
+	log.Default().Println("preparing...")
 
 	env := flag.String(
 		"env",
@@ -27,10 +27,10 @@ func main() {
 		"specify path to env",
 	)
 
-	port := flag.Int(
-		"port",
-		3000,
-		"specify port to listen on",
+	gwei := flag.Int64(
+		"gwei",
+		100000000000000000,
+		"specify amount of gwei to fund",
 	)
 
 	path := flag.String(
@@ -74,12 +74,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Default().Println("serving...")
+	log.Default().Println("funding...")
 
-	err = router.NewServer(s, es, c).Start(*port)
+	err = c.FundPaymaster(big.NewInt(*gwei))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Default().Println("station shutting down...")
+	log.Default().Println("funded...")
 }

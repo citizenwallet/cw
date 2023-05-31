@@ -42,8 +42,6 @@ func NewResponder(supply *supply.Supply) *Responder {
 
 func (r *Responder) Body(w http.ResponseWriter, body any) error {
 
-	w.Header().Add("Content-Type", "application/json")
-
 	b, err := json.Marshal(&Response{
 		ResponseType: ResponseTypeObject,
 		Object:       body,
@@ -52,6 +50,7 @@ func (r *Responder) Body(w http.ResponseWriter, body any) error {
 		return err
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	w.Write(b)
 
 	return nil
@@ -97,22 +96,21 @@ func (r *Responder) EncryptedBody(w http.ResponseWriter, ctx context.Context, bo
 	return nil
 }
 
-// func BodyMultiple(w http.ResponseWriter, body any) error {
+func (r *Responder) BodyMultiple(w http.ResponseWriter, body any) error {
 
-// 	w.Header().Add("ContentType", "application/json")
+	b, err := json.Marshal(&Response{
+		ResponseType: ResponseTypeArray,
+		Objects:      body,
+	})
+	if err != nil {
+		return err
+	}
 
-// 	b, err := json.Marshal(&Response{
-// 		ResponseType: ResponseTypeArray,
-// 		Objects:      body,
-// 	})
-// 	if err != nil {
-// 		return err
-// 	}
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(b)
 
-// 	w.Write(b)
-
-// 	return nil
-// }
+	return nil
+}
 
 // func StreamedBody(w http.ResponseWriter, body string) error {
 // 	flusher, ok := w.(http.Flusher)

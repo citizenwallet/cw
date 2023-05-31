@@ -36,7 +36,6 @@ func (h *Handlers) Send(w http.ResponseWriter, r *http.Request) {
 
 	err = h.tr.Forward(req.TX)
 	if err != nil {
-		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

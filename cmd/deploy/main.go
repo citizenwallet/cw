@@ -99,7 +99,7 @@ func main() {
 	}
 	defer es.Close()
 
-	c, err := community.Deploy(es, s.PrivateKey, maddress, conf.Chain)
+	c, err := community.Deploy(conf.RegensIPFSUploader, es, s.PrivateKey, maddress, conf.Chain)
 	if err != nil {
 		log.Fatal(err)
 	}

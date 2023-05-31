@@ -23,7 +23,12 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/cmd/station/main.go",
-      "args": ["-env", "-chainUrl", "http://localhost:8545", "-chainId", "1"]
+      "args": [
+        "-port",
+        "3001",
+        "-c",
+        "../../config/community/0xa7c0be25Dc966544f530334803A10b430B39Df0a.community.json"
+      ]
     }
   ]
 }

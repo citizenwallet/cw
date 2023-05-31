@@ -3,6 +3,8 @@ package request
 import (
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -190,4 +192,46 @@ func (r *Request) RecoverAddress(signature string) (*common.Address, error) {
 	}
 
 	return &address, nil
+}
+
+// HttpRequest makes a http request to the specified Url
+func HttpRequest(method, url string, body io.Reader, headers map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	// close connection after request is over
+	req.Close = true
+
+	// set Content-Type header to default application/json if not present
+	if _, ok := headers["Content-Type"]; !ok {
+		req.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	}
+
+	// set other headers
+	for k, v := range headers {
+		// set basic auth header
+		if k == "BasicAuth" {
+			// basic auth header value must be of format username:password
+			basicAuthCred := strings.Split(v, ":")
+			if len(basicAuthCred) != 2 {
+				continue
+			}
+			req.SetBasicAuth(basicAuthCred[0], basicAuthCred[1])
+			continue
+		}
+
+		// set other headers
+		req.Header.Set(k, v)
+	}
+
+	client := &http.Client{}
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, err
 }
