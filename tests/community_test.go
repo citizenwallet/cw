@@ -44,10 +44,22 @@ func TestCommunity(t *testing.T) {
 	}
 	defer es.Close()
 
+	bs, err := ethrequest.NewEthService(conf.RPCUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer bs.Close()
+
+	ps, err := ethrequest.NewEthService(conf.PaymasterRPCUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer ps.Close()
+
 	t.Run("test community deploy", func(t *testing.T) {
 
 		// deploy community
-		c, err = community.Deploy(conf.RegensIPFSUploader, es, s.PrivateKey, maddress, conf.Chain)
+		c, err = community.Deploy(conf.RegensIPFSUploader, es, bs, ps, conf.PaymasterType, s.PrivateKey, maddress, conf.Chain)
 		if err != nil {
 			log.Fatal(err)
 		}

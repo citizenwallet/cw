@@ -61,6 +61,33 @@ func (h *Handlers) CreateAccount(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type balanceResp struct {
+	Balance *big.Int `json:"balance"`
+}
+
+// GetAccountDERC20Balance returns the balance of a given account
+func (h *Handlers) GetAccountDERC20Balance(w http.ResponseWriter, r *http.Request) {
+	accAddr := chi.URLParam(r, "account_id")
+	if accAddr == "" || accAddr == "0x" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	bal, err := h.c.GetDERC20Balance(common.HexToAddress(accAddr))
+	if err != nil {
+		println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = h.responder.Body(w, balanceResp{Balance: bal})
+	if err != nil {
+		println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
 // CreateProfile creates a profile in the community for a given account and returns the address
 func (h *Handlers) CreateProfile(w http.ResponseWriter, r *http.Request) {
 	accAddr := chi.URLParam(r, "account_id")
@@ -113,8 +140,9 @@ func (h *Handlers) CreateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type SubmitOpRequest struct {
-	Data []byte `json:"data"`
+type opRequest struct {
+	Sender string `json:"sender"`
+	Op     string `json:"op"`
 }
 
 // SubmitOp submits an operation to the gateway for processing
@@ -125,20 +153,24 @@ func (h *Handlers) SubmitOp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req *SubmitOpRequest
+	println("addr " + addr)
+
+	req := &opRequest{}
 
 	err := json.NewDecoder(r.Body).Decode(req)
 	if err != nil {
+		println("decoding ")
 		println(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	println(common.Bytes2Hex(req.Data))
+	println("data " + req.Op)
 
-	err = h.c.SubmitOp(common.HexToAddress(addr), req.Data)
+	err = h.c.SubmitOp([]byte(req.Op))
 	if err != nil {
+		println("op")
 		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -208,6 +240,34 @@ func (h *Handlers) GetVouchers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.responder.BodyMultiple(w, vouchers)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
+// Sponsor returns the paymaster address for the community along with gas data
+func (h *Handlers) SponsorOp(w http.ResponseWriter, r *http.Request) {
+	opr := &opRequest{}
+
+	err := json.NewDecoder(r.Body).Decode(opr)
+	if err != nil {
+		println(err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	println("op")
+	println(opr.Op)
+
+	sop, err := h.c.GetPaymasterData(common.HexToAddress(opr.Sender), []byte(opr.Op))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = h.responder.Body(w, sop)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

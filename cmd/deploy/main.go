@@ -99,7 +99,19 @@ func main() {
 	}
 	defer es.Close()
 
-	c, err := community.Deploy(conf.RegensIPFSUploader, es, s.PrivateKey, maddress, conf.Chain)
+	bs, err := ethrequest.NewEthService(conf.RPCUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer bs.Close()
+
+	ps, err := ethrequest.NewEthService(conf.PaymasterRPCUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer ps.Close()
+
+	c, err := community.Deploy(conf.RegensIPFSUploader, es, bs, ps, conf.PaymasterType, s.PrivateKey, maddress, conf.Chain)
 	if err != nil {
 		log.Fatal(err)
 	}

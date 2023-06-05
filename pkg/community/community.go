@@ -3,20 +3,22 @@ package community
 import (
 	"crypto/ecdsa"
 	"encoding/json"
+	"fmt"
 	"math/big"
 
 	"github.com/daobrussels/cw/pkg/common/ethrequest"
 	"github.com/daobrussels/cw/pkg/common/voucher"
 	"github.com/daobrussels/cw/pkg/common/wei"
 	"github.com/daobrussels/cw/pkg/cw"
-	"github.com/daobrussels/smartcontracts/pkg/contracts/accfactory"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/account"
+	"github.com/daobrussels/smartcontracts/pkg/contracts/derc20"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/gateway"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/grfactory"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/paymaster"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/profactory"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/profile"
 	"github.com/daobrussels/smartcontracts/pkg/contracts/regensToken"
+	"github.com/daobrussels/smartcontracts/pkg/contracts/simpleaccountfactory"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -28,11 +30,21 @@ type CommunityAddress struct {
 	GratitudeFactory common.Address `json:"gratitudeFactory"`
 	ProfileFactory   common.Address `json:"profileFactory"`
 	RegensToken      common.Address `json:"regensToken"`
+	DERC20           common.Address `json:"derc20"`
 	Chain            cw.ChainConfig `json:"chain"`
 }
 
+type PaymasterType string
+
+const (
+	PaymasterTypePayAsYouGo PaymasterType = "payg"
+	PaymasterTypeToken      PaymasterType = "erc20token"
+)
+
 type Community struct {
 	es      *ethrequest.EthService
+	bs      *ethrequest.EthService
+	ps      *ethrequest.EthService
 	key     *ecdsa.PrivateKey
 	address common.Address
 	Chain   cw.ChainConfig
@@ -42,9 +54,10 @@ type Community struct {
 
 	paddr     common.Address
 	Paymaster *paymaster.Paymaster
+	ptype     PaymasterType
 
 	afaddr         common.Address
-	AccountFactory *accfactory.Accfactory
+	AccountFactory *simpleaccountfactory.Simpleaccountfactory
 
 	grfaddr          common.Address
 	GratitudeFactory *grfactory.Grfactory
@@ -54,6 +67,9 @@ type Community struct {
 
 	regaddr     common.Address
 	RegensToken *regensToken.RegensToken
+
+	deraddr common.Address
+	DERC20  *derc20.Derc20
 
 	vu *voucher.VoucherUploader
 }
@@ -66,12 +82,13 @@ func (c *Community) ExportAddress() CommunityAddress {
 		GratitudeFactory: c.grfaddr,
 		ProfileFactory:   c.prfaddr,
 		RegensToken:      c.regaddr,
+		DERC20:           c.deraddr,
 		Chain:            c.Chain,
 	}
 }
 
 // New instantiates a community struct using the provided addresses for the contracts
-func New(baseUrl string, es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Address, addr CommunityAddress) (*Community, error) {
+func New(baseUrl string, es, bs, ps *ethrequest.EthService, ptype string, key *ecdsa.PrivateKey, address common.Address, addr CommunityAddress) (*Community, error) {
 	// instantiate gateway contract
 	g, err := gateway.NewGateway(addr.Gateway, es.Client())
 	if err != nil {
@@ -85,7 +102,7 @@ func New(baseUrl string, es *ethrequest.EthService, key *ecdsa.PrivateKey, addre
 	}
 
 	// instantiate account factory contract
-	acc, err := accfactory.NewAccfactory(addr.AccountFactory, es.Client())
+	acc, err := simpleaccountfactory.NewSimpleaccountfactory(addr.AccountFactory, es.Client())
 	if err != nil {
 		return nil, err
 	}
@@ -107,10 +124,17 @@ func New(baseUrl string, es *ethrequest.EthService, key *ecdsa.PrivateKey, addre
 		return nil, err
 	}
 
+	der, err := derc20.NewDerc20(addr.DERC20, es.Client())
+	if err != nil {
+		return nil, err
+	}
+
 	vu := voucher.NewVoucherUploader(baseUrl)
 
 	return &Community{
 		es:               es,
+		bs:               bs,
+		ps:               ps,
 		key:              key,
 		address:          address,
 		Chain:            addr.Chain,
@@ -118,6 +142,7 @@ func New(baseUrl string, es *ethrequest.EthService, key *ecdsa.PrivateKey, addre
 		Gateway:          g,
 		paddr:            addr.Paymaster,
 		Paymaster:        p,
+		ptype:            PaymasterType(ptype),
 		afaddr:           addr.AccountFactory,
 		AccountFactory:   acc,
 		grfaddr:          addr.GratitudeFactory,
@@ -126,20 +151,25 @@ func New(baseUrl string, es *ethrequest.EthService, key *ecdsa.PrivateKey, addre
 		ProfileFactory:   pro,
 		regaddr:          addr.RegensToken,
 		RegensToken:      reg,
+		deraddr:          addr.DERC20,
+		DERC20:           der,
 		vu:               vu,
 	}, nil
 }
 
 // Deploy instantiates a community struct and deploys the contracts
-func Deploy(baseUrl string, es *ethrequest.EthService, key *ecdsa.PrivateKey, address common.Address, chain cw.ChainConfig) (*Community, error) {
+func Deploy(baseUrl string, es, bs, ps *ethrequest.EthService, ptype string, key *ecdsa.PrivateKey, address common.Address, chain cw.ChainConfig) (*Community, error) {
 	vu := voucher.NewVoucherUploader(baseUrl)
 
 	c := &Community{
 		es:      es,
+		bs:      bs,
+		ps:      ps,
 		key:     key,
 		address: address,
 		Chain:   chain,
 		vu:      vu,
+		ptype:   PaymasterType(ptype),
 	}
 
 	// instantiate gateway contract
@@ -293,7 +323,7 @@ func (c *Community) DeployAccountFactory() error {
 	setDefaultParameters(auth, nonce)
 
 	// deploy the account factory contract
-	addr, _, acc, err := accfactory.DeployAccfactory(auth, c.es.Client(), c.EntryPoint)
+	addr, _, acc, err := simpleaccountfactory.DeploySimpleaccountfactory(auth, c.es.Client(), c.EntryPoint)
 	if err != nil {
 		return err
 	}
@@ -378,12 +408,12 @@ func (c *Community) CreateAccount(owner common.Address) (*common.Address, error)
 	// set default parameters
 	setDefaultParameters(auth, nonce)
 
-	_, err = c.AccountFactory.CreateAccount(auth, owner, big.NewInt(int64(nonce)))
+	_, err = c.AccountFactory.CreateAccount(auth, owner, big.NewInt(int64(0)))
 	if err != nil {
 		return nil, err
 	}
 
-	addr, err := c.AccountFactory.GetAddress(&bind.CallOpts{}, owner, big.NewInt(int64(nonce)))
+	addr, err := c.AccountFactory.GetAddress(&bind.CallOpts{}, owner, big.NewInt(int64(0)))
 	if err != nil {
 		return nil, err
 	}
@@ -555,44 +585,44 @@ func (c *Community) GetAccount(owner common.Address) (*account.Account, error) {
 	return a, nil
 }
 
-// SubmitOp submits an operation to the gateway for processing
-func (c *Community) SubmitOp(sender common.Address, data []byte) error {
-	auth, err := c.NewTransactor()
+// GetDERC20Balance returns the balance of the provided owner
+func (c *Community) GetDERC20Balance(owner common.Address) (*big.Int, error) {
+	b, err := c.DERC20.BalanceOf(&bind.CallOpts{}, owner)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	return b, nil
+}
+
+// GetPaymasterData returns the paymaster data for the provided userop
+func (c *Community) GetPaymasterData(sender common.Address, userop []byte) (*ethrequest.SponsorOp, error) {
 	// get the next nonce for the main wallet
-	nonce, err := c.NextNonce()
+	nonce, err := c.es.NextNonce(sender.Hex())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// set default parameters
-	setDefaultParameters(auth, nonce)
+	hexString := fmt.Sprintf("%x", nonce-1)
 
-	// acc, err := c.AccountFactory.GetAddress(&bind.CallOpts{}, sender, big.NewInt(int64(nonce)))
+	if len(hexString)%2 != 0 {
+		hexString = "0" + hexString
+	}
 
-	senderNonce, err := c.es.NextNonce(sender.Hex())
+	hexString = "0x" + hexString
+
+	sop, err := c.ps.SponsorUserOp(hexString, userop, c.EntryPoint.Hex(), string(c.ptype))
 	if err != nil {
-		return err
+		println(err.Error())
+		return nil, err
 	}
 
-	// TODO: test and check UserOperation signature and required data
-	// This is still not tested and may not work
-	op := &gateway.UserOperation{
-		Sender:           sender,
-		Nonce:            big.NewInt(int64(senderNonce)),
-		CallData:         data,
-		PaymasterAndData: c.paddr.Bytes(),
-	}
+	return sop, nil
+}
 
-	// TODO: Note that this handleOps is called by the bundler account and if bundler send this transaction
-	// in public mempool on blockchain validator node, anyone can frontrun this transaction and change the beneficiary
-	// address so front runner can get the refund of this transaction. So it’s important for bundler to send these transaction
-	// via private RPC to node providers or Block Builders so it doesn’t end up in public mempool.
-	// https://www.biconomy.io/post/decoding-entrypoint-and-useroperation-with-erc-4337-part2
-	_, err = c.Gateway.HandleOps(auth, []gateway.UserOperation{*op}, c.address)
+// SubmitOp submits an operation to the gateway for processing
+func (c *Community) SubmitOp(userop []byte) error {
+	err := c.bs.SendUserOp(userop, c.EntryPoint.Hex())
 	if err != nil {
 		return err
 	}

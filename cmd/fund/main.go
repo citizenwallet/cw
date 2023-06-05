@@ -52,24 +52,36 @@ func main() {
 		log.Fatal(err)
 	}
 
-	es, err := ethrequest.NewEthService(addr.Chain.RPC[0])
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer es.Close()
-
 	conf, err := config.NewConfigWChain(ctx, *env, addr.Chain)
 	if err != nil {
 		log.Default().Println(fmt.Sprintf("invalid or missing chain config file at %s", *path))
 		log.Fatal(err)
 	}
 
+	es, err := ethrequest.NewEthService(addr.Chain.RPC[0])
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer es.Close()
+
+	bs, err := ethrequest.NewEthService(conf.RPCUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer bs.Close()
+
+	ps, err := ethrequest.NewEthService(conf.PaymasterRPCUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer ps.Close()
+
 	s, err := supply.New(conf.SupplyWalletKey)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	c, err := community.New(conf.RegensIPFSUploader, es, s.PrivateKey, common.HexToAddress(s.Address), addr)
+	c, err := community.New(conf.RegensIPFSUploader, es, bs, ps, conf.PaymasterType, s.PrivateKey, common.HexToAddress(s.Address), addr)
 	if err != nil {
 		log.Fatal(err)
 	}

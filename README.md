@@ -66,7 +66,11 @@ Replace values in `.env` for your setup
 
 ## Run Gas Station
 
-`go run cmd/station/main.go -url endpoint`
+`go run cmd/station/main.go -port 3001 -c config/community/0x123123.community.json`
+
+## Run Deployment
+
+`go run cmd/deploy/main.go -chain config/chain/test.chain.json`
 
 ## Run Blockchain Event Handler
 

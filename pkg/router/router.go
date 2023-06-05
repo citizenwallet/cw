@@ -65,7 +65,8 @@ func (r *Router) Start(port int) error {
 		})
 
 		cr.Route(("/account/{account_id}"), func(cr chi.Router) {
-			cr.Post("/profile", community.CreateProfile) // attach a profile and return address
+			cr.Get("/derc20/balance", community.GetAccountDERC20Balance) // get account derc20 balance
+			cr.Post("/profile", community.CreateProfile)                 // attach a profile and return address
 		})
 
 		cr.Route("/regensunite", func(cr chi.Router) {
@@ -73,7 +74,10 @@ func (r *Router) Start(port int) error {
 			cr.Get("/voucher", community.GetVouchers)    // get regens unite balance
 		})
 
-		cr.Post("/op", community.SubmitOp) // submit an operation
+		cr.Route("/op", func(cr chi.Router) {
+			cr.Post("/sponsor", community.SponsorOp) // sponsor an operation
+			cr.Post("/submit", community.SubmitOp)   // submit an operation
+		})
 	})
 
 	cr.Route("/token", func(cr chi.Router) {
