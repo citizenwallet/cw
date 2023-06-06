@@ -138,21 +138,18 @@ func (e *EthService) GetCode(address common.Address) ([]byte, error) {
 }
 
 type SponsorOp struct {
-	NextNonce            string `json:"nextNonce"`
 	PaymasterAndData     string `json:"paymasterAndData"`
 	PreVerificationGas   string `json:"preVerificationGas"`
 	VerificationGasLimit string `json:"verificationGasLimit"`
 	CallGasLimit         string `json:"callGasLimit"`
 }
 
-func (e *EthService) SponsorUserOp(nonce string, op []byte, eaddr, ptype string) (*SponsorOp, error) {
+func (e *EthService) SponsorUserOp(op []byte, eaddr, ptype string) (*SponsorOp, error) {
 	uop := &UserOperation{}
 	err := json.Unmarshal(op, uop)
 	if err != nil {
 		return nil, err
 	}
-
-	uop.Nonce = nonce
 
 	println("nonce: ", uop.Nonce)
 
@@ -164,7 +161,6 @@ func (e *EthService) SponsorUserOp(nonce string, op []byte, eaddr, ptype string)
 		return nil, err
 	}
 
-	sop.NextNonce = nonce
 	sop.PreVerificationGas = makeValidEvenHex(sop.PreVerificationGas)
 	sop.VerificationGasLimit = makeValidEvenHex(sop.VerificationGasLimit)
 	sop.CallGasLimit = makeValidEvenHex(sop.CallGasLimit)

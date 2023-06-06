@@ -3,7 +3,6 @@ package community
 import (
 	"crypto/ecdsa"
 	"encoding/json"
-	"fmt"
 	"math/big"
 
 	"github.com/daobrussels/cw/pkg/common/ethrequest"
@@ -597,21 +596,7 @@ func (c *Community) GetDERC20Balance(owner common.Address) (*big.Int, error) {
 
 // GetPaymasterData returns the paymaster data for the provided userop
 func (c *Community) GetPaymasterData(sender common.Address, userop []byte) (*ethrequest.SponsorOp, error) {
-	// get the next nonce for the main wallet
-	nonce, err := c.es.NextNonce(sender.Hex())
-	if err != nil {
-		return nil, err
-	}
-
-	hexString := fmt.Sprintf("%x", nonce)
-
-	if len(hexString)%2 != 0 {
-		hexString = "0" + hexString
-	}
-
-	hexString = "0x" + hexString
-
-	sop, err := c.ps.SponsorUserOp(hexString, userop, c.EntryPoint.Hex(), string(c.ptype))
+	sop, err := c.ps.SponsorUserOp(userop, c.EntryPoint.Hex(), string(c.ptype))
 	if err != nil {
 		println(err.Error())
 		return nil, err
