@@ -147,31 +147,17 @@ type opRequest struct {
 
 // SubmitOp submits an operation to the gateway for processing
 func (h *Handlers) SubmitOp(w http.ResponseWriter, r *http.Request) {
-	addr, ok := cw.GetAddressFromContext(r.Context())
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	println("addr " + addr)
-
 	req := &opRequest{}
 
 	err := json.NewDecoder(r.Body).Decode(req)
 	if err != nil {
-		println("decoding ")
-		println(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	println("data " + req.Op)
-
-	err = h.c.SubmitOp([]byte(req.Op))
+	err = h.c.SubmitOp(common.HexToAddress(req.Sender), []byte(req.Op))
 	if err != nil {
-		println("op")
-		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

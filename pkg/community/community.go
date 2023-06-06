@@ -603,7 +603,7 @@ func (c *Community) GetPaymasterData(sender common.Address, userop []byte) (*eth
 		return nil, err
 	}
 
-	hexString := fmt.Sprintf("%x", nonce-1)
+	hexString := fmt.Sprintf("%x", nonce)
 
 	if len(hexString)%2 != 0 {
 		hexString = "0" + hexString
@@ -621,7 +621,7 @@ func (c *Community) GetPaymasterData(sender common.Address, userop []byte) (*eth
 }
 
 // SubmitOp submits an operation to the gateway for processing
-func (c *Community) SubmitOp(userop []byte) error {
+func (c *Community) SubmitOp(sender common.Address, userop []byte) error {
 	err := c.bs.SendUserOp(userop, c.EntryPoint.Hex())
 	if err != nil {
 		return err

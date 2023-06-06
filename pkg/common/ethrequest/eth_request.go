@@ -15,6 +15,7 @@ import (
 const (
 	ETHEstimateGas        = "eth_estimateGas"
 	ETHSendRawTransaction = "eth_sendRawTransaction"
+	ETHSign               = "eth_sign"
 
 	ETHSendUserOperation   = "eth_sendUserOperation"
 	PMSponsorUserOperation = "pm_sponsorUserOperation"
@@ -110,6 +111,17 @@ func (e *EthService) EstimateContractGasPrice(data []byte) (uint64, error) {
 	return e.client.EstimateGas(e.ctx, msg)
 }
 
+func (e *EthService) Sign(addr string, message string) (string, error) {
+
+	var sig string
+	err := e.rpc.Call(&sig, ETHSign, addr, message)
+	if err != nil {
+		return "", err
+	}
+
+	return sig, err
+}
+
 func (e *EthService) SendRawTransaction(tx string) ([]byte, error) {
 
 	err := e.rpc.Call(nil, ETHSendRawTransaction, tx)
@@ -191,7 +203,6 @@ func (e *EthService) SendUserOp(op []byte, eaddr string) error {
 
 	err = e.rpc.Call(nil, ETHSendUserOperation, uop, eaddr)
 	if err != nil {
-		println(err.Error())
 		return err
 	}
 
