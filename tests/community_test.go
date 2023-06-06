@@ -66,8 +66,8 @@ func TestCommunity(t *testing.T) {
 
 		entryPoint = c.EntryPoint
 
-		println("Community Entrypoint:")
-		println(c.EntryPoint.Hex())
+		log.Default().Println("Community Entrypoint:")
+		log.Default().Println(c.EntryPoint.Hex())
 
 		amount := big.NewInt(int64(wei.EthToWei(1)))
 		err = c.FundPaymaster(amount)
@@ -75,8 +75,8 @@ func TestCommunity(t *testing.T) {
 			log.Fatal(err)
 		}
 
-		println("Paymaster funded:")
-		println(amount.String())
+		log.Default().Println("Paymaster funded:")
+		log.Default().Println(amount.String())
 	})
 
 	t.Run("test account deploy on community", func(t *testing.T) {
@@ -88,16 +88,16 @@ func TestCommunity(t *testing.T) {
 			log.Fatal(err)
 		}
 
-		println("Account address:")
-		println(accaddr.Hex())
+		log.Default().Println("Account address:")
+		log.Default().Println(accaddr.Hex())
 
 		grtaddr, err := c.CreateGratitudeApp(*accaddr)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		println("Gratitude address:")
-		println(grtaddr.Hex())
+		log.Default().Println("Gratitude address:")
+		log.Default().Println(grtaddr.Hex())
 
 		// create a profile for the corresponding account
 		profile, err := c.CreateProfile(*accaddr)
@@ -105,8 +105,8 @@ func TestCommunity(t *testing.T) {
 			log.Fatal(err)
 		}
 
-		println("Profile address:")
-		println(profile.Hex())
+		log.Default().Println("Profile address:")
+		log.Default().Println(profile.Hex())
 
 		// get account
 		acc, err := c.GetAccount(*accaddr)
@@ -119,8 +119,8 @@ func TestCommunity(t *testing.T) {
 			log.Fatal(err)
 		}
 
-		println("Account entrypoint address:")
-		println(acccep.Hex())
+		log.Default().Println("Account entrypoint address:")
+		log.Default().Println(acccep.Hex())
 
 		if acccep.Hex() != entryPoint.Hex() {
 			log.Fatal("Account entrypoint address is not the same as community entrypoint address")
@@ -137,8 +137,8 @@ func TestCommunity(t *testing.T) {
 			log.Fatal(err)
 		}
 
-		println("Profile:")
-		println(pep.Hex())
+		log.Default().Println("Profile:")
+		log.Default().Println(pep.Hex())
 
 		if pep.Hex() != entryPoint.Hex() {
 			log.Fatal("Profile entrypoint address is not the same as community entrypoint address")

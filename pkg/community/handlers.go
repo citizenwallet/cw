@@ -44,18 +44,14 @@ func (h *Handlers) CreateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	println(addr)
-
 	acc, err := h.c.CreateAccount(common.HexToAddress(addr))
 	if err != nil {
-		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	err = h.responder.Body(w, response.AddressResponse{Address: acc.Hex()})
 	if err != nil {
-		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -75,14 +71,12 @@ func (h *Handlers) GetAccountDERC20Balance(w http.ResponseWriter, r *http.Reques
 
 	bal, err := h.c.GetDERC20Balance(common.HexToAddress(accAddr))
 	if err != nil {
-		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	err = h.responder.Body(w, balanceResp{Balance: bal})
 	if err != nil {
-		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -104,37 +98,29 @@ func (h *Handlers) CreateProfile(w http.ResponseWriter, r *http.Request) {
 
 	acc, err := h.c.GetAccount(common.HexToAddress(accAddr))
 	if err != nil {
-		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	owner, err := acc.Owner(&bind.CallOpts{})
 	if err != nil {
-		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	println(addr)
 
 	if strings.ToLower(owner.Hex()) != strings.ToLower(addr) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	println(accAddr)
-
 	pr, err := h.c.CreateProfile(common.HexToAddress(accAddr))
 	if err != nil {
-		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	err = h.responder.Body(w, response.AddressResponse{Address: pr.Hex()})
 	if err != nil {
-		println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -238,14 +224,10 @@ func (h *Handlers) SponsorOp(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(opr)
 	if err != nil {
-		println(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
-
-	println("op")
-	println(opr.Op)
 
 	sop, err := h.c.GetPaymasterData(common.HexToAddress(opr.Sender), []byte(opr.Op))
 	if err != nil {

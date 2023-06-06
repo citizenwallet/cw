@@ -598,7 +598,6 @@ func (c *Community) GetDERC20Balance(owner common.Address) (*big.Int, error) {
 func (c *Community) GetPaymasterData(sender common.Address, userop []byte) (*ethrequest.SponsorOp, error) {
 	sop, err := c.ps.SponsorUserOp(userop, c.EntryPoint.Hex(), string(c.ptype))
 	if err != nil {
-		println(err.Error())
 		return nil, err
 	}
 

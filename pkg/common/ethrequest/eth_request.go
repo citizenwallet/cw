@@ -151,13 +151,10 @@ func (e *EthService) SponsorUserOp(op []byte, eaddr, ptype string) (*SponsorOp, 
 		return nil, err
 	}
 
-	println("nonce: ", uop.Nonce)
-
 	sop := &SponsorOp{}
 
 	err = e.rpc.Call(sop, PMSponsorUserOperation, uop, eaddr, map[string]string{"type": ptype})
 	if err != nil {
-		println(err.Error())
 		return nil, err
 	}
 
